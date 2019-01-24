@@ -1,0 +1,258 @@
+---
+title: "Racial Heterogeneity Variable Construction"
+author: "Bernard A. Coles IV"
+date: "10/21/2018"
+output: html_document
+---
+
+```{r include=FALSE}
+library(tidyverse)
+library(dplyr)
+library(igraph)
+library(gridExtra)
+library(corrplot)
+load("C:/Users/coles/Desktop/Data/wave1.rda")
+load("C:/Users/coles/Desktop/Data/network.wave1.rda")
+load("C:/Users/coles/Desktop/Data/weights.rda")
+wave1.data <- da21600.0001
+network.data <- da21600.0003
+weights <- da21600.0004
+```
+
+###Consolidating the Data
+```{r include=FALSE}
+#Descriptive Statistics
+#Network Variables
+summary(network.data$ESRDEN) #density
+summary(network.data$BCENT10X) #centrality
+summary(network.data$IDGX2) #popularity
+summary(network.data$SEG1RCE5) #school level racial segregation index
+summary(network.data$ERNRC5) #proportion of races represented in ego send/receive network 
+summary(network.data$EHRC5) #send/receive network heterogeneity
+summary(network.data$SRCE51) #white salience
+
+#victimization variables
+summary(wave1.data$H1FV2) #someone pulled a knife or gun on you
+summary(wave1.data$H1FV3) #someone shot you
+summary(wave1.data$H1FV4) #someone cut or stabbed you 
+summary(wave1.data$H1FV6) #You were jumped
+
+#Control Variables
+summary(wave1.data$S1) #age
+summary(wave1.data$S2) #sex
+summary(wave1.data$PA55) #household income
+summary(wave1.data$H1FV9) #weapon carrying
+
+#Delinquency Index Variables
+summary(wave1.data$S59A)
+summary(wave1.data$S59B)
+summary(wave1.data$S59C)
+summary(wave1.data$S59D)
+summary(wave1.data$S59E)
+summary(wave1.data$S59F)
+summary(wave1.data$S59G)
+
+#Sample Weights
+summary(wave1.data$GSWGT1)
+
+
+#Merging Relevant Variables into one Data Frame
+data1 <- wave1.data %>%
+  select(AID, H1FV2, H1FV3, H1FV4, H1FV6, H1GI6A, H1GI6B, H1GI6C, H1GI6D, H1GI6E, H1GI4, S1, S2, PA55, H1FV9)
+
+data2 <-  network.data %>%
+  select(AID, ESRDEN, BCENT10X, IDGX2, SEG1RCE5, ERNRC5, EHRC5, AXS59A, AXS59B, AXS59C, AXS59D, AXS59E, AXS59F, AXS59G, SRCE51, SRCE52, SRCE53, SRCE54, SRCE55)
+
+data3 <- weights %>%
+  select(AID, GSWGT1)
+
+my.data <- merge(data1, data2, by = "AID") 
+mydata <- merge(my.data, data3, by = "AID")
+```
+
+###Variable Cleaning and Construction 
+```{r}
+#Constructing Race Dummy Variable 
+mydata$race <- NA 
+for(i in 1:6504) {
+mydata$race <- ifelse(mydata$H1GI6A == "(1) (1) Marked" , "white",
+                      ifelse(mydata$H1GI6B == "(1) (1) Marked", "black",
+                             ifelse(mydata$H1GI4 == "(1) (1) Yes", "hispanic",
+                                    ifelse(mydata$H1GI6C == "(1) (1) Marked", "other",
+                                           ifelse(mydata$H1GI6D == "(1) (1) Marked (If Asian/Pacific Islander among R's answer ask Q", "asian",
+                                                  ifelse(mydata$H1GI6E == "(1) (1) Marked", "other", "NA"))))))
+}
+#Set reference category to White
+mydata$race  <- as.factor(mydata$race)
+mydata$race <- relevel(mydata$race, ref = "white")
+
+#Constructing Victimization Indicatior (Pieces)
+mydata$pulled <- NA
+for(i in 1:6504) {
+mydata$pulled <-  ifelse(mydata$H1FV2 == "(0) (0) Never", 0,
+                         ifelse(mydata$H1FV2 == "(1) (1) Once" , 1,
+                                ifelse(mydata$H1FV2 == "(2) (2) More than once", 1, NA)))
+}
+
+mydata$shot <- NA
+for(i in 1:6504) {
+mydata$shot <- ifelse(mydata$H1FV3 == "(0) (0) Never", 0,
+                         ifelse(mydata$H1FV3 == "(1) (1) Once" , 1,
+                                ifelse(mydata$H1FV3 == "(2) (2) More than once", 1, NA)))
+}
+
+mydata$stab <- NA
+for(i in 1:6504) {
+mydata$stab <- ifelse(mydata$H1FV4 == "(0) (0) Never", 0,
+                         ifelse(mydata$H1FV4 == "(1) (1) Once" , 1,
+                                ifelse(mydata$H1FV4 == "(2) (2) More than once", 1, NA)))
+}
+
+mydata$jump <- NA
+for(i in 1:6504) {
+mydata$jump <- ifelse(mydata$H1FV6 == "(0) (0) Never", 0,
+                         ifelse(mydata$H1FV6 == "(1) (1) Once" , 1,
+                                ifelse(mydata$H1FV6 == "(2) (2) More than once", 1, NA)))
+}
+
+#Constructing Victimization Indicator 
+mydata$victim <- NA
+for(i in 1:6504) {
+  mydata$victim <- ifelse(mydata$pulled == 1, 1,
+                          ifelse(is.na(mydata$pulled), NA,
+                                 ifelse(mydata$shot == 1, 1,
+                                        ifelse(is.na(mydata$shot), NA,
+                                               ifelse(mydata$stab == 1, 1,
+                                                      ifelse(is.na(mydata$stab), NA,
+                                                             ifelse(mydata$jump == 1, 1,
+                                                                    ifelse(is.na(mydata$jump), NA, 0))))))))
+}
+
+#Creating the Network Delinquency Variable
+mydata <- mydata %>%
+mutate(network.delinquency = (AXS59A + AXS59B + AXS59C + AXS59D + AXS59E + AXS59F + AXS59G)/7) 
+
+#Cleaning Control Variables 
+mydata$female <- NA
+for(i in 1:6504) {
+  mydata$female <- ifelse(mydata$S2 == "(1) (1) Male", "male",
+                          ifelse(mydata$S2 == "(2) (2) Female", "female", NA))
+}
+mydata$female  <- as.factor(mydata$female)
+mydata$female <- relevel(mydata$female, ref = "male")
+
+mydata$age <- mydata$S1
+mydata$age2 <- mydata$age*mydata$age
+mydata$family.income <- mydata$PA55
+
+mydata$weapon.carry <- NA
+for(i in 1:6504) {
+  mydata$weapon.carry <- ifelse(mydata$H1FV9 == "(0) (0) None (skip to Q.11)", 0, 
+                                ifelse(mydata$H1FV9 == "(1) (1) 1 day", 1,
+                                       ifelse(mydata$H1FV9 == "(2) (2) 2 or 3 days", 1,
+                                              ifelse(mydata$H1FV9 == "(3) (3) 4 or 5 days", 1,
+                                                     ifelse(mydata$H1FV9 == "(4) (4) 6 or more days", 1, NA)))))
+}
+
+#Renaming Network Variables
+mydata$racial.segregation <- mydata$SEG1RCE5
+mydata$racial.heterogeneity <- mydata$ERNRC5
+mydata$density <- mydata$ESRDEN
+mydata$centrality <- mydata$BCENT10X
+mydata$popularity <- mydata$IDGX2
+mydata$white.salience <- mydata$SRCE51
+mydata$black.salience <- mydata$SRCE52
+mydata$hispanic.salience <- mydata$SRCE53
+mydata$asian.salience <- mydata$SRCE54
+mydata$other.salience <- mydata$SRCE55
+
+#transforming Weight
+mydata <- mydata %>%
+  mutate(weight = GSWGT1/22261000)
+```
+
+###Descriptive Statistics 
+```{r}
+descriptive1 <- mydata %>%
+  group_by(race, female) %>%
+  summarise(victim = mean(victim, na.rm = T))
+
+descriptive2 <- mydata %>%
+  group_by(race, female) %>%
+  summarise(Black.Salience = mean(black.salience, na.rm = T))
+
+descriptive3 <- mydata %>%
+  group_by(race, female) %>%
+  summarise(White.Salience = mean(white.salience, na.rm = T))
+
+descriptive1
+descriptive2
+descriptive3
+
+plot1 <- mydata %>%
+  ggplot(aes(as.factor(race), as.numeric(victim), color = as.factor(female))) +
+  geom_point(position = "jitter")+
+  coord_flip()
+  
+plot2 <- mydata %>%
+  ggplot(aes(as.factor(race), as.numeric(victim), color = as.factor(weapon.carry))) +
+  geom_point(position = "jitter")+
+  coord_flip()
+
+plot3 <- mydata %>%
+  ggplot(aes(black.salience, as.numeric(victim), color = as.factor(race))) +
+  geom_point(position = "jitter")
+
+plot4 <- mydata %>%
+  ggplot(aes(black.salience, as.numeric(victim), color = as.factor(female))) +
+  geom_point(position = "jitter")
+
+plot5 <- mydata %>%
+  ggplot(aes(white.salience, as.numeric(victim), color = as.factor(race))) +
+  geom_point(position = "jitter")
+
+plot6 <- mydata %>%
+  ggplot(aes(white.salience, as.numeric(victim), color = as.factor(female))) +
+  geom_point(position = "jitter")
+
+  
+grid.arrange(plot1, plot2, ncol = 2)
+grid.arrange(plot3, plot4, ncol = 2)
+grid.arrange(plot5, plot6, ncol = 2)
+
+plot3 <- mydata %>%
+  ggplot(aes())
+
+context <- mydata %>%
+  select(victim, black.salience, white.salience, racial.segregation, racial.heterogeneity, network.delinquency)
+context.correlations <- cor(context, use = "pairwise.complete.obs")
+corrplot(context.correlations, method = "number")
+
+```
+
+###Analysis 
+```{r}
+
+```
+
+###Model6 Visualizations
+```{r}
+
+```
+
+###Interaction1 Visualizations: White Salience X Racial Heterogeneity
+```{r}
+
+```
+
+###Interaction3 Visualizations: Black Salience X Racial Heterogeneity
+```{r}
+
+```
+
+###Comparing Models
+```{r}
+
+
+```
+
