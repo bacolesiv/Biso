@@ -15,6 +15,8 @@ library(corrplot)
 load("E:/Repository/Biso/Biso/data/wave1.rda")
 load("E:/Repository/Biso/Biso/data/network.wave1.rda")
 load("E:/Repository/Biso/Biso/data/weights.rda")
+#load("E:/Repository/Biso/Biso/data/weights.rda")
+
 #Mac
 load("~/desktop/Biso/Biso/data/wave1.rda")
 load("~/desktop/Biso/Biso/data/network.wave1.rda")
@@ -64,13 +66,13 @@ summary(wave1.data$GSWGT1)
 
 #Merging Relevant Variables into one Data Frame
 data1 <- wave1.data %>%
-  select(AID, H1FV2, H1FV3, H1FV4, H1FV6, H1GI6A, H1GI6B, H1GI6C, H1GI6D, H1GI6E, H1GI4, S1, S2, PA55, H1FV9)
+  dplyr :: select(AID, H1FV2, H1FV3, H1FV4, H1FV6, H1GI6A, H1GI6B, H1GI6C, H1GI6D, H1GI6E, H1GI4, S1, S2, PA55, H1FV9)
 
 data2 <-  network.data %>%
-  select(AID, ESRDEN, BCENT10X, IDGX2, SEG1RCE5, ERNRC5, EHRC5, AXS59A, AXS59B, AXS59C, AXS59D, AXS59E, AXS59F, AXS59G, SRCE51, SRCE52, SRCE53, SRCE54, SRCE55)
+  dplyr :: select(AID, ESRDEN, BCENT10X, IDGX2, SEG1RCE5, ERNRC5, EHRC5, AXS59A, AXS59B, AXS59C, AXS59D, AXS59E, AXS59F, AXS59G, SRCE51, SRCE52, SRCE53, SRCE54, SRCE55)
 
 data3 <- weights %>%
-  select(AID, GSWGT1)
+  dplyr :: select(AID, GSWGT1)
 
 my.data <- merge(data1, data2, by = "AID") 
 mydata <- merge(my.data, data3, by = "AID")
@@ -78,7 +80,8 @@ mydata <- merge(my.data, data3, by = "AID")
 
 ###Variable Cleaning and Construction 
 ```{r}
-#Constructing Race Dummy Variable 
+#Constructing Race Dummy Variable -> you can use the recode function to condense and maybe improve this code? 
+#recode is good for calapsing a single variable into smaller categories
 mydata$race <- NA 
 for(i in 1:6504) {
 mydata$race <- ifelse(mydata$H1GI6A == "(1) (1) Marked" , "white",
@@ -88,6 +91,15 @@ mydata$race <- ifelse(mydata$H1GI6A == "(1) (1) Marked" , "white",
                                            ifelse(mydata$H1GI6D == "(1) (1) Marked (If Asian/Pacific Islander among R's answer ask Q", "asian",
                                                   ifelse(mydata$H1GI6E == "(1) (1) Marked", "other", "NA"))))))
 }
+
+mydata %>% 
+  mutate(race = case_when(
+    .$H1GI6A == "(1) (1) Marked" ~ "white",
+    .$H1GIB == "(1) (1) Marked" ~ "black",
+    TRUE ~ "other"
+  )
+)
+
 #Set reference category to White
 mydata$race  <- as.factor(mydata$race)
 mydata$race <- relevel(mydata$race, ref = "white")
@@ -234,10 +246,22 @@ context <- mydata %>%
 context.correlations <- cor(context, use = "pairwise.complete.obs")
 corrplot(context.correlations, method = "number")
 
+
+mydata$weapon.carry.na <- as.numeric(mydata$weapon.carry.na)
 ```
 
-###Analysis 
+###Trying out a Map Model  
 ```{r}
+victim.na <- str_remove(mydata$victim, " NA$")
+weapon.carry.na <- str_remove(mydata$weapon.carry, " NA$")
+
+model <- map(
+  alist(
+    victim.na ~ dbinom(1,p),
+    logit(p) <- a + bp*weapon.carry,
+    a ~ dnorm(0, 10),
+    bp ~ dnorm(0, 10)),
+  data = mydata)
 
 ```
 
