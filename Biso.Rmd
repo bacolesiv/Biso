@@ -11,16 +11,17 @@ library(dplyr)
 library(igraph)
 library(gridExtra)
 library(corrplot)
+library(rethinking)
 #Windows
-load("E:/Repository/Biso/Biso/data/wave1.rda")
-load("E:/Repository/Biso/Biso/data/network.wave1.rda")
-load("E:/Repository/Biso/Biso/data/weights.rda")
+#load("E:/Repository/Biso/Biso/data/wave1.rda")
+#load("E:/Repository/Biso/Biso/data/network.wave1.rda")
 #load("E:/Repository/Biso/Biso/data/weights.rda")
 
 #Mac
 load("~/desktop/Biso/Biso/data/wave1.rda")
 load("~/desktop/Biso/Biso/data/network.wave1.rda")
 load("~/desktop/Biso/Biso/data/weights.rda")
+
 #Renamed
 wave1.data <- da21600.0001
 network.data <- da21600.0003
@@ -60,13 +61,16 @@ summary(wave1.data$S59E)
 summary(wave1.data$S59F)
 summary(wave1.data$S59G)
 
+#Race Variabkes
+summary(wave1.data$S6A)
+
 #Sample Weights
 summary(wave1.data$GSWGT1)
 
 
 #Merging Relevant Variables into one Data Frame
 data1 <- wave1.data %>%
-  dplyr :: select(AID, H1FV2, H1FV3, H1FV4, H1FV6, H1GI6A, H1GI6B, H1GI6C, H1GI6D, H1GI6E, H1GI4, S1, S2, PA55, H1FV9)
+  dplyr :: select(AID, H1FV2, H1FV3, H1FV4, H1FV6, S6A, S6B, S6C, S6D, S6E, S4, S1, S2, PA55, H1FV9)
 
 data2 <-  network.data %>%
   dplyr :: select(AID, ESRDEN, BCENT10X, IDGX2, SEG1RCE5, ERNRC5, EHRC5, AXS59A, AXS59B, AXS59C, AXS59D, AXS59E, AXS59F, AXS59G, SRCE51, SRCE52, SRCE53, SRCE54, SRCE55)
@@ -94,8 +98,14 @@ mydata$race <- ifelse(mydata$H1GI6A == "(1) (1) Marked" , "white",
 
 mydata %>% 
   mutate(race = case_when(
-    .$H1GI6A == "(1) (1) Marked" ~ "white",
-    .$H1GIB == "(1) (1) Marked" ~ "black",
+    .$S6A == "(1) (1) Marked" ~ "White",
+    .$S6B == "(1) (1) Marked" ~ "Black",
+    .$S6C == "(1) (1) Marked" ~ "Asian",
+    .$S6D == "(1) (1) Marked" ~ "Native American",
+    .$ == "(1) (1) Marked" ~ "Latino",
+    .$ == "(1) (1) Marked" ~ "native american",
+    .$ == "(1) (1) Marked" ~ "black",
+    .$ == "(1) (1) Marked" ~ "black",
     TRUE ~ "other"
   )
 )
@@ -237,7 +247,7 @@ plot6 <- mydata %>%
 grid.arrange(plot1, plot2, ncol = 2)
 grid.arrange(plot3, plot4, ncol = 2)
 grid.arrange(plot5, plot6, ncol = 2)
-
+ 
 plot3 <- mydata %>%
   ggplot(aes())
 
@@ -263,6 +273,30 @@ model <- map(
     bp ~ dnorm(0, 10)),
   data = mydata)
 
+```
+
+
+```{r}
+hues <- c("red", "blue", "green", "yellow")
+
+my_data <- tibble(lets = sample(letters, 1000, replace = TRUE),
+               nums = sample(1:5, 1000, replace = TRUE),
+               color = sample(hues, 1000, replace = TRUE))
+
+my_data
+
+my_data  <-  my_data %>%
+    mutate(new_var = case_when(
+               lets %in% letters[1:13] &
+               nums > 2 & color %in% c("red", "yellow") ~ "Yes",
+               TRUE ~ "No")
+           )
+
+my_data
+
+my_data %>%
+    group_by(new_var) %>%
+    tally()
 ```
 
 ###Model6 Visualizations
