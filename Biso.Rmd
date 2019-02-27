@@ -12,15 +12,17 @@ library(igraph)
 library(gridExtra)
 library(corrplot)
 library(rethinking)
+library(brms)
+
 #Windows
 #load("E:/Repository/Biso/Biso/data/wave1.rda")
 #load("E:/Repository/Biso/Biso/data/network.wave1.rda")
 #load("E:/Repository/Biso/Biso/data/weights.rda")
 
 #Mac
-load("~/desktop/Biso/Biso/data/wave1.rda")
-load("~/desktop/Biso/Biso/data/network.wave1.rda")
-load("~/desktop/Biso/Biso/data/weights.rda")
+load("~/desktop/Repository/Biso/data/wave1.rda")
+load("~/desktop/Repository/Biso/data/network.wave1.rda")
+load("~/desktop/Repository/Biso/data/weights.rda")
 
 #Renamed
 wave1.data <- da21600.0001
@@ -29,45 +31,7 @@ weights <- da21600.0004
 ```
 
 ###Consolidating the Data
-```{r include=FALSE}
-#Descriptive Statistics
-#Network Variables
-summary(network.data$ESRDEN) #density
-summary(network.data$BCENT10X) #centrality
-summary(network.data$IDGX2) #popularity
-summary(network.data$SEG1RCE5) #school level racial segregation index
-summary(network.data$ERNRC5) #proportion of races represented in ego send/receive network 
-summary(network.data$EHRC5) #send/receive network heterogeneity
-summary(network.data$SRCE51) #white salience
-
-#victimization variables
-summary(wave1.data$H1FV2) #someone pulled a knife or gun on you
-summary(wave1.data$H1FV3) #someone shot you
-summary(wave1.data$H1FV4) #someone cut or stabbed you 
-summary(wave1.data$H1FV6) #You were jumped
-
-#Control Variables
-summary(wave1.data$S1) #age
-summary(wave1.data$S2) #sex
-summary(wave1.data$PA55) #household income
-summary(wave1.data$H1FV9) #weapon carrying
-
-#Delinquency Index Variables
-summary(wave1.data$S59A)
-summary(wave1.data$S59B)
-summary(wave1.data$S59C)
-summary(wave1.data$S59D)
-summary(wave1.data$S59E)
-summary(wave1.data$S59F)
-summary(wave1.data$S59G)
-
-#Race Variabkes
-summary(wave1.data$S6A)
-
-#Sample Weights
-summary(wave1.data$GSWGT1)
-
-
+```{r message=FALSE, warning=FALSE, include=FALSE}
 #Merging Relevant Variables into one Data Frame
 data1 <- wave1.data %>%
   dplyr :: select(AID, H1FV2, H1FV3, H1FV4, H1FV6, S6A, S6B, S6C, S6D, S6E, S4, S1, S2, PA55, H1FV9)
@@ -78,245 +42,164 @@ data2 <-  network.data %>%
 data3 <- weights %>%
   dplyr :: select(AID, GSWGT1)
 
-my.data <- merge(data1, data2, by = "AID") 
-mydata <- merge(my.data, data3, by = "AID")
+mydata <- merge(data1, data2, by = "AID") 
+#mydata <- merge(my.data, data3, by = "AID")
 ```
 
 ###Variable Cleaning and Construction 
 ```{r}
-#Constructing Race Dummy Variable -> you can use the recode function to condense and maybe improve this code? 
-#recode is good for calapsing a single variable into smaller categories
-mydata$race <- NA 
-for(i in 1:6504) {
-mydata$race <- ifelse(mydata$H1GI6A == "(1) (1) Marked" , "white",
-                      ifelse(mydata$H1GI6B == "(1) (1) Marked", "black",
-                             ifelse(mydata$H1GI4 == "(1) (1) Yes", "hispanic",
-                                    ifelse(mydata$H1GI6C == "(1) (1) Marked", "other",
-                                           ifelse(mydata$H1GI6D == "(1) (1) Marked (If Asian/Pacific Islander among R's answer ask Q", "asian",
-                                                  ifelse(mydata$H1GI6E == "(1) (1) Marked", "other", "NA"))))))
-}
+summary(wave1.data$S4)
 
-mydata %>% 
+#Race variable
+mydata <- mydata %>%
   mutate(race = case_when(
-    .$S6A == "(1) (1) Marked" ~ "White",
-    .$S6B == "(1) (1) Marked" ~ "Black",
-    .$S6C == "(1) (1) Marked" ~ "Asian",
-    .$S6D == "(1) (1) Marked" ~ "Native American",
-    .$ == "(1) (1) Marked" ~ "Latino",
-    .$ == "(1) (1) Marked" ~ "native american",
-    .$ == "(1) (1) Marked" ~ "black",
-    .$ == "(1) (1) Marked" ~ "black",
-    TRUE ~ "other"
-  )
-)
+    (S4 == "(1) (1) Yes (go to Q.5)" & S6A == "(1) (1) Marked") ~ "white latino",
+    (S4 == "(1) (1) Yes (go to Q.5)" & S6B == "(1) (1) Marked") ~ "black latino",
+    (S6A == "(1) (1) Marked" & S6B== "(1) (1) Marked") ~ "mixed race",
+    (S6A == "(1) (1) Marked" & S6C == "(1) (1) Marked") ~ "mixed race",
+    (S6A == "(1) (1) Marked" & S6D == "(1) (1) Marked") ~ "mixed race",
+    (S6A == "(1) (1) Marked" & S6E == "(1) (1) Marked") ~ "mixed race",
+    (S6B == "(1) (1) Marked" & S6C == "(1) (1) Marked") ~ "mixed race",
+    (S6B == "(1) (1) Marked" & S6D == "(1) (1) Marked") ~ "mixed race",
+    (S6B == "(1) (1) Marked" & S6E == "(1) (1) Marked") ~ "mixed race",
+    (S6C == "(1) (1) Marked" & S6D == "(1) (1) Marked") ~ "mixed race",
+    (S6C == "(1) (1) Marked" & S6E == "(1) (1) Marked") ~ "mixed race",
+    (S6D == "(1) (1) Marked" & S6E == "(1) (1) Marked") ~ "mixed race",
+    S4 == "(1) (1) Yes (go to Q.5)" ~ "latino", 
+    S6A == "(1) (1) Marked" ~ "white",
+    S6B == "(1) (1) Marked" ~ "black", 
+    S6C == "(1) (1) Marked" ~ "asian", 
+    S6D == "(1) (1) Marked" ~ "native american", 
+    S6E == "(1) (1) Marked" ~ "other",
+    T ~ NA_character_))
 
-#Set reference category to White
-mydata$race  <- as.factor(mydata$race)
-mydata$race <- relevel(mydata$race, ref = "white")
+#Victimization
+mydata <- mydata %>%
+  mutate(victim = case_when(
+    (H1FV2 == "(1) (1) Once" |  H1FV2 == "(2) (2) More than once") ~ 1,
+    (H1FV3 == "(1) (1) Once" |  H1FV3 == "(2) (2) More than once") ~ 1,
+    (H1FV4 == "(1) (1) Once" |  H1FV4 == "(2) (2) More than once") ~ 1,
+    (H1FV6 == "(1) (1) Once" |  H1FV6 == "(2) (2) More than once") ~ 1,
+    H1FV2 == "(0) (0) Never" ~ 0,
+    H1FV3 == "(0) (0) Never" ~ 0,
+    H1FV4 == "(0) (0) Never" ~ 0,
+    H1FV6 == "(0) (0) Never" ~ 0,
+    T ~ NA_real_))
 
-#Constructing Victimization Indicatior (Pieces)
-mydata$pulled <- NA
-for(i in 1:6504) {
-mydata$pulled <-  ifelse(mydata$H1FV2 == "(0) (0) Never", 0,
-                         ifelse(mydata$H1FV2 == "(1) (1) Once" , 1,
-                                ifelse(mydata$H1FV2 == "(2) (2) More than once", 1, NA)))
-}
-
-mydata$shot <- NA
-for(i in 1:6504) {
-mydata$shot <- ifelse(mydata$H1FV3 == "(0) (0) Never", 0,
-                         ifelse(mydata$H1FV3 == "(1) (1) Once" , 1,
-                                ifelse(mydata$H1FV3 == "(2) (2) More than once", 1, NA)))
-}
-
-mydata$stab <- NA
-for(i in 1:6504) {
-mydata$stab <- ifelse(mydata$H1FV4 == "(0) (0) Never", 0,
-                         ifelse(mydata$H1FV4 == "(1) (1) Once" , 1,
-                                ifelse(mydata$H1FV4 == "(2) (2) More than once", 1, NA)))
-}
-
-mydata$jump <- NA
-for(i in 1:6504) {
-mydata$jump <- ifelse(mydata$H1FV6 == "(0) (0) Never", 0,
-                         ifelse(mydata$H1FV6 == "(1) (1) Once" , 1,
-                                ifelse(mydata$H1FV6 == "(2) (2) More than once", 1, NA)))
-}
-
-#Constructing Victimization Indicator 
-mydata$victim <- NA
-for(i in 1:6504) {
-  mydata$victim <- ifelse(mydata$pulled == 1, 1,
-                          ifelse(is.na(mydata$pulled), NA,
-                                 ifelse(mydata$shot == 1, 1,
-                                        ifelse(is.na(mydata$shot), NA,
-                                               ifelse(mydata$stab == 1, 1,
-                                                      ifelse(is.na(mydata$stab), NA,
-                                                             ifelse(mydata$jump == 1, 1,
-                                                                    ifelse(is.na(mydata$jump), NA, 0))))))))
-}
 
 #Creating the Network Delinquency Variable
 mydata <- mydata %>%
-mutate(network.delinquency = (AXS59A + AXS59B + AXS59C + AXS59D + AXS59E + AXS59F + AXS59G)/7) 
+  mutate(network.delinquency = (AXS59A + AXS59B + AXS59C + AXS59D + AXS59E + AXS59F + AXS59G)/7) 
 
 #Cleaning Control Variables 
-mydata$female <- NA
-for(i in 1:6504) {
-  mydata$female <- ifelse(mydata$S2 == "(1) (1) Male", "male",
-                          ifelse(mydata$S2 == "(2) (2) Female", "female", NA))
-}
-mydata$female  <- as.factor(mydata$female)
-mydata$female <- relevel(mydata$female, ref = "male")
+mydata <- mydata %>%
+  mutate(sex = case_when(
+    S2 == "(1) (1) Male" ~ "male",
+    S2 == "(2) (2) Female" ~ "female",
+    T ~ NA_character_))
 
 mydata$age <- mydata$S1
-mydata$age2 <- mydata$age*mydata$age
 mydata$family.income <- mydata$PA55
 
-mydata$weapon.carry <- NA
-for(i in 1:6504) {
-  mydata$weapon.carry <- ifelse(mydata$H1FV9 == "(0) (0) None (skip to Q.11)", 0, 
-                                ifelse(mydata$H1FV9 == "(1) (1) 1 day", 1,
-                                       ifelse(mydata$H1FV9 == "(2) (2) 2 or 3 days", 1,
-                                              ifelse(mydata$H1FV9 == "(3) (3) 4 or 5 days", 1,
-                                                     ifelse(mydata$H1FV9 == "(4) (4) 6 or more days", 1, NA)))))
-}
+
+mydata <- mydata %>%
+  mutate(weapon.carry = case_when(
+    H1FV9 == "(0) (0) None (skip to Q.11)" ~ 0, 
+    (H1FV9 == "(1) (1) 1 day" | H1FV9 == "(2) (2) 2 or 3 days" | H1FV9 == "(3) (3) 4 or 5 days" | H1FV9 == "(4) (4) 6 or more days") ~ 1,
+    T ~ NA_real_))
 
 #Renaming Network Variables
-mydata$racial.segregation <- mydata$SEG1RCE5
 mydata$racial.heterogeneity <- mydata$ERNRC5
 mydata$density <- mydata$ESRDEN
 mydata$centrality <- mydata$BCENT10X
 mydata$popularity <- mydata$IDGX2
-mydata$white.salience <- mydata$SRCE51
-mydata$black.salience <- mydata$SRCE52
-mydata$hispanic.salience <- mydata$SRCE53
-mydata$asian.salience <- mydata$SRCE54
-mydata$other.salience <- mydata$SRCE55
 
-#transforming Weight
+#Variable Selection 
 mydata <- mydata %>%
-  mutate(weight = GSWGT1/22261000)
+  select(AID, victim, race, sex, age, family.income, weapon.carry, network.delinquency, popularity, centrality, density)
 ```
 
 ###Descriptive Statistics 
 ```{r}
-descriptive1 <- mydata %>%
-  group_by(race, female) %>%
-  summarise(victim = mean(victim, na.rm = T))
-
-descriptive2 <- mydata %>%
-  group_by(race, female) %>%
-  summarise(Black.Salience = mean(black.salience, na.rm = T))
-
-descriptive3 <- mydata %>%
-  group_by(race, female) %>%
-  summarise(White.Salience = mean(white.salience, na.rm = T))
-
-descriptive1
-descriptive2
-descriptive3
-
-plot1 <- mydata %>%
-  ggplot(aes(as.factor(race), as.numeric(victim), color = as.factor(female))) +
-  geom_point(position = "jitter")+
-  coord_flip()
-  
-plot2 <- mydata %>%
-  ggplot(aes(as.factor(race), as.numeric(victim), color = as.factor(weapon.carry))) +
-  geom_point(position = "jitter")+
+race.plot <- mydata %>%
+  filter(race != is.na(race)) %>%
+  ggplot(aes(x = race, fill = race)) +
+  geom_bar() +
   coord_flip()
 
-plot3 <- mydata %>%
-  ggplot(aes(black.salience, as.numeric(victim), color = as.factor(race))) +
-  geom_point(position = "jitter")
+race.victim <- mydata %>%
+  filter(race != is.na(race)) %>%
+  ggplot(aes(x = race)) +
+  geom_bar(aes(fill = as.character(victim)), position = "fill") + 
+  coord_flip()
 
-plot4 <- mydata %>%
-  ggplot(aes(black.salience, as.numeric(victim), color = as.factor(female))) +
-  geom_point(position = "jitter")
+a <- mydata %>%
+  filter(race != is.na(race)) %>%
+  group_by(race) %>%
+  summarise(victim = mean(victim, na.rm = T)) #Native American and Black Latinos are the most victimized racial groups
 
-plot5 <- mydata %>%
-  ggplot(aes(white.salience, as.numeric(victim), color = as.factor(race))) +
-  geom_point(position = "jitter")
-
-plot6 <- mydata %>%
-  ggplot(aes(white.salience, as.numeric(victim), color = as.factor(female))) +
-  geom_point(position = "jitter")
-
-  
-grid.arrange(plot1, plot2, ncol = 2)
-grid.arrange(plot3, plot4, ncol = 2)
-grid.arrange(plot5, plot6, ncol = 2)
- 
-plot3 <- mydata %>%
-  ggplot(aes())
-
-context <- mydata %>%
-  select(victim, black.salience, white.salience, racial.segregation, racial.heterogeneity, network.delinquency)
-context.correlations <- cor(context, use = "pairwise.complete.obs")
-corrplot(context.correlations, method = "number")
-
-
-mydata$weapon.carry.na <- as.numeric(mydata$weapon.carry.na)
+b <- mydata %>%
+  group_by(weapon.carry) %>%
+  summarise(victim = mean(victim, na.rm = T)) #victim rate close to mean for non carriers, much higher for carriers ~ 0.58
 ```
 
-###Trying out a Map Model  
+###Brm() Model Construction
 ```{r}
-victim.na <- str_remove(mydata$victim, " NA$")
-weapon.carry.na <- str_remove(mydata$weapon.carry, " NA$")
-
-model <- map(
-  alist(
-    victim.na ~ dbinom(1,p),
-    logit(p) <- a + bp*weapon.carry,
-    a ~ dnorm(0, 10),
-    bp ~ dnorm(0, 10)),
-  data = mydata)
-
-```
-
-
-```{r}
-hues <- c("red", "blue", "green", "yellow")
-
-my_data <- tibble(lets = sample(letters, 1000, replace = TRUE),
-               nums = sample(1:5, 1000, replace = TRUE),
-               color = sample(hues, 1000, replace = TRUE))
-
-my_data
-
-my_data  <-  my_data %>%
-    mutate(new_var = case_when(
-               lets %in% letters[1:13] &
-               nums > 2 & color %in% c("red", "yellow") ~ "Yes",
-               TRUE ~ "No")
-           )
-
-my_data
-
-my_data %>%
-    group_by(new_var) %>%
-    tally()
-```
-
-###Model6 Visualizations
-```{r}
+#Basic Models: Variables Added in Blocks
+model1 <- brm(data = mydata, family = binomial,
+              victim ~ 1 + age + sex + family.income,
+              prior = c(normal(0, 10), class = Intercept, 
+                        normal(0, 10, class = b)))
+model2 <- brm(data = mydata, family = binomial,
+              victim ~ 1 + age + sex + family.income + weapon.carry + network.delinquency,
+              prior = c(normal(0, 10), class = Intercept, 
+                        normal(0, 10, class = b)))
+model3 <- brm(data = mydata, family = binomial,
+              victim ~ 1 + age + sex + family.income + weapon.carry + network.delinquency + popularity + centrality + density, 
+              prior = c(normal(0, 10), class = Intercept, 
+                        normal(0, 10, class = b)))
+#Interaction Terms
+imodel1 <- brm(data = mydata, family = binomial,
+              victim ~ 1 + age + sex + family.income + weapon.carry + network.delinquency + popularity + centrality + density + network.delinquency*popularity, 
+              prior = c(normal(0, 10), class = Intercept, 
+                        normal(0, 10, class = b)))
+imodel2 <- brm(data = mydata, family = binomial,
+              victim ~ 1 + age + sex + family.income + weapon.carry + network.delinquency + popularity + centrality + density + network.delinquency*centrality, 
+              prior = c(normal(0, 10), class = Intercept, 
+                        normal(0, 10, class = b)))
+imodel3 <- brm(data = mydata, family = binomial,
+              victim ~ 1 + age + sex + family.income + weapon.carry + network.delinquency + popularity + centrality + density + network.delinquency*density, 
+              prior = c(normal(0, 10), class = Intercept, 
+                        normal(0, 10, class = b)))
 
 ```
 
-###Interaction1 Visualizations: White Salience X Racial Heterogeneity
+###Comparing the Models
 ```{r}
+#Should Return a nice looking Table with the best model at the top and the worst at the bottom
+model_weights(model1, model2, model3, 
+              weights = "waic") %>%
+  as_tibble() %>% 
+  rename(weight = value) %>% 
+  mutate(model  = c("b6.11", "b6.12", "b6.13", "b6.14"),
+         weight = weight %>% round(digits = 3)) %>% 
+  select(model, weight) %>% 
+  arrange(desc(weight)) %>% 
+  knitr::kable()
 
+model_weights(imodel1, imodel2, imodel3, 
+              weights = "waic") %>%
+  as_tibble() %>% 
+  rename(weight = value) %>% 
+  mutate(model  = c("b6.11", "b6.12", "b6.13", "b6.14"),
+         weight = weight %>% round(digits = 3)) %>% 
+  select(model, weight) %>% 
+  arrange(desc(weight)) %>% 
+  knitr::kable()
 ```
 
-###Interaction3 Visualizations: Black Salience X Racial Heterogeneity
+###Visualizing the Best Models
 ```{r}
-
-```
-
-###Comparing Models
-```{r}
-
-
+#useful code from the last question in homework 5 -> quantile plot
 ```
 
