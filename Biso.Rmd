@@ -15,14 +15,14 @@ library(rethinking)
 library(brms)
 
 #Windows
-#load("E:/Repository/Biso/Biso/data/wave1.rda")
-#load("E:/Repository/Biso/Biso/data/network.wave1.rda")
-#load("E:/Repository/Biso/Biso/data/weights.rda")
+load("E:/Repository/Biso/Biso/data/wave1.rda")
+load("E:/Repository/Biso/Biso/data/network.wave1.rda")
+load("E:/Repository/Biso/Biso/data/weights.rda")
 
 #Mac
-load("~/desktop/Repository/Biso/data/wave1.rda")
-load("~/desktop/Repository/Biso/data/network.wave1.rda")
-load("~/desktop/Repository/Biso/data/weights.rda")
+#load("~/desktop/Repository/Biso/data/wave1.rda")
+#load("~/desktop/Repository/Biso/data/network.wave1.rda")
+#load("~/desktop/Repository/Biso/data/weights.rda")
 
 #Renamed
 wave1.data <- da21600.0001
@@ -148,50 +148,37 @@ b <- mydata %>%
 #Basic Models: Variables Added in Blocks
 model1 <- brm(data = mydata, family = binomial,
               victim ~ 1 + age + sex + family.income,
-              prior = c(normal(0, 10), class = Intercept, 
-                        normal(0, 10, class = b)))
-model2 <- brm(data = mydata, family = binomial,
-              victim ~ 1 + age + sex + family.income + weapon.carry + network.delinquency,
-              prior = c(normal(0, 10), class = Intercept, 
-                        normal(0, 10, class = b)))
-model3 <- brm(data = mydata, family = binomial,
-              victim ~ 1 + age + sex + family.income + weapon.carry + network.delinquency + popularity + centrality + density, 
-              prior = c(normal(0, 10), class = Intercept, 
-                        normal(0, 10, class = b)))
+              prior = c(prior(normal(0, 10), class = Intercept), 
+                        prior(normal(0, 10), class = b)), 
+                         iter = 4000, warmup = 2000, cores = 4, chains = 4)
+model2 <- update(model1, newdata = mydata, formula = victim ~ 1 + age + sex + family.income + weapon.carry + network.delinquency)
+model3 <- update(model2, newdata = mydata, formula = victim ~ 1 + age + sex + family.income + weapon.carry + network.delinquency + popularity + centrality + density)
+
 #Interaction Terms
-imodel1 <- brm(data = mydata, family = binomial,
-              victim ~ 1 + age + sex + family.income + weapon.carry + network.delinquency + popularity + centrality + density + network.delinquency*popularity, 
-              prior = c(normal(0, 10), class = Intercept, 
-                        normal(0, 10, class = b)))
-imodel2 <- brm(data = mydata, family = binomial,
-              victim ~ 1 + age + sex + family.income + weapon.carry + network.delinquency + popularity + centrality + density + network.delinquency*centrality, 
-              prior = c(normal(0, 10), class = Intercept, 
-                        normal(0, 10, class = b)))
-imodel3 <- brm(data = mydata, family = binomial,
-              victim ~ 1 + age + sex + family.income + weapon.carry + network.delinquency + popularity + centrality + density + network.delinquency*density, 
-              prior = c(normal(0, 10), class = Intercept, 
-                        normal(0, 10, class = b)))
+imodel1 <- update(model3, newdata = mydata, formula = victim ~ 1 + age + sex + family.income + weapon.carry + network.delinquency + popularity + centrality + density + network.delinquency*popularity)
+imodel2 <- update(imodel1, newdata = mydata, formula = victim ~ 1 + age + sex + family.income + weapon.carry + network.delinquency + popularity + centrality + density + network.delinquency*centrality)
+imodel3 <- update(imodel2, newdata = mydata, formula = victim ~ 1 + age + sex + family.income + weapon.carry + network.delinquency + popularity + centrality + density + network.delinquency*density)
 
 ```
 
 ###Comparing the Models
 ```{r}
 #Should Return a nice looking Table with the best model at the top and the worst at the bottom
-model_weights(model1, model2, model3, 
+model_weights(model2, model3, 
               weights = "waic") %>%
   as_tibble() %>% 
   rename(weight = value) %>% 
-  mutate(model  = c("b6.11", "b6.12", "b6.13", "b6.14"),
+  mutate(model  = c("model2", "model3"),
          weight = weight %>% round(digits = 3)) %>% 
   select(model, weight) %>% 
   arrange(desc(weight)) %>% 
   knitr::kable()
 
-model_weights(imodel1, imodel2, imodel3, 
+model_weights(model2, model3, imodel1, imodel2, imodel3, 
               weights = "waic") %>%
   as_tibble() %>% 
   rename(weight = value) %>% 
-  mutate(model  = c("b6.11", "b6.12", "b6.13", "b6.14"),
+  mutate(model  = c("model2", "model3", "imodel1", "imodel2", "imodel3"),
          weight = weight %>% round(digits = 3)) %>% 
   select(model, weight) %>% 
   arrange(desc(weight)) %>% 
@@ -200,6 +187,37 @@ model_weights(imodel1, imodel2, imodel3,
 
 ###Visualizing the Best Models
 ```{r}
-#useful code from the last question in homework 5 -> quantile plot
-```
+#Create Data
+mean.area <- mean(data$log.area)                                            
+quant.sdgs <- quantile(data$sd.growing.season, c(.1,.5,.9))                     
+mgs <- seq(0, 12, length.out = 20)
+
+predictions <- as.tibble(expand.grid(mean.area, quant.sdgs, mgs))   
+colnames(predictions) <- c("mean.area", "quant.sdgs",  "mgs")      
+predictions$joinby <- seq(1:nrow(predictions))                       
+
+matrix.dim <- nrow(predictions)                                        
+N <- 1e3                                                
+
+#Sample all possible combinations
+samples <- MASS::mvrnorm(mu = imodel2@coef, Sigma = model.c@vcov, n = matrix.dim*N ) %>%                        
+  as.tibble %>% mutate(joinby = rep(1:matrix.dim , N))                       
+
+samples <- full_join(samples, predictions, by = "joinby") %>%             
+  mutate(gdp.hat = a + b1*mean.area + b2*mgs + b3*quant.sdgs + b4*mgs*quant.sdgs) %>%         
+  group_by(quant.sdgs, mgs) %>%                              
+  mutate(mu = mean(gdp.hat),                                  
+        lb.mu = HPDI(gdp.hat, prob = .97)[1],                 
+        ub.mu = HPDI(gdp.hat, prob = .97)[2]) %>%             
+  slice(1)
+
+#Visualize
+samples$SD.Quantiles <- as.factor(samples$quant.sdgs)
+samples$SD.Quantiles <- ifelse(samples$quant.sdgs == 0.527, "10th Percentile",
+                             ifelse(samples$quant.sdgs == 1.690, "50th Percentile", "90th Percentile"))
+
+ggplot(samples, aes(x = mgs , group = SD.Quantiles)) +
+  geom_smooth(aes(y = mu , color = SD.Quantiles) , method = "lm" ) +
+  geom_ribbon(aes(ymin = lb.mu , ymax = ub.mu) , alpha = .2)  +
+  labs(title = "Language Diversity Predictions by Growing Season", x = "Average Growing Season", y = "Language Diversity")```
 
