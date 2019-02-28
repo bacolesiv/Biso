@@ -117,6 +117,9 @@ mydata$popularity <- mydata$IDGX2
 #Variable Selection 
 mydata <- mydata %>%
   select(AID, victim, race, sex, age, family.income, weapon.carry, network.delinquency, popularity, centrality, density)
+
+#Making Categorical Variables Recognizable to the regression model 
+mydata$sex <- as.factor(mydata$sex)
 ```
 
 ###Descriptive Statistics 
@@ -186,6 +189,30 @@ model_weights(model2, model3, imodel1, imodel2, imodel3,
 ```
 
 ###Visualizing the Best Models
+
+```{r}
+#Complete Data Only
+mydata.c <- mydata[complete.cases(mydata), ]
+
+#New data frame with variables held constant - Interaction terms held at quantiles
+newdata <- with(mydata.c, data.frame(age = mean(age), 
+                                   sex = factor(sex), 
+                                   family.income = mean(family.income), 
+                                   weapon.carry = mean(weapon.carry), 
+                                   network.delinquency = network.delinquency),
+                                   popularity = mean(popularity), 
+                                   centrality = quantile(mydata$centrality, c(.1, .5, .9)),
+                                   density = mean(denisty))) #should be sliced? 
+
+#Predicted Likelihood of Victimization added to the newdata 
+newdata$victim <- predict(imodel2, newdata = newdata, type = "response")
+
+#Visualize
+ggplot(newdata, aes(x = network.delinquency, y = victim)) +
+  geom_line(color = centrality)
+```
+
+
 ```{r}
 #Create Data
 mean.area <- mean(data$log.area)                                            
