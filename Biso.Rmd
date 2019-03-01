@@ -147,13 +147,13 @@ b <- mydata %>%
 ```
 
 ###Brm() Model Construction
-```{r}
+```{r message=FALSE, warning=FALSE, include=FALSE}
 #Basic Models: Variables Added in Blocks
 model1 <- brm(data = mydata, family = binomial,
               victim ~ 1 + age + sex + family.income,
               prior = c(prior(normal(0, 10), class = Intercept), 
-                        prior(normal(0, 10), class = b)), 
-                         iter = 4000, warmup = 2000, cores = 4, chains = 4)
+                        prior(normal(0, 10), class = b)))
+
 model2 <- update(model1, newdata = mydata, formula = victim ~ 1 + age + sex + family.income + weapon.carry + network.delinquency)
 model3 <- update(model2, newdata = mydata, formula = victim ~ 1 + age + sex + family.income + weapon.carry + network.delinquency + popularity + centrality + density)
 
@@ -195,23 +195,43 @@ model_weights(model2, model3, imodel1, imodel2, imodel3,
 mydata.c <- mydata[complete.cases(mydata), ]
 
 #New data frame with variables held constant - Interaction terms held at quantiles
-newdata <- with(mydata.c, data.frame(age = mean(age), 
-                                   sex = factor(sex), 
-                                   family.income = mean(family.income), 
-                                   weapon.carry = mean(weapon.carry), 
-                                   network.delinquency = network.delinquency),
-                                   popularity = mean(popularity), 
-                                   centrality = quantile(mydata$centrality, c(.1, .5, .9)),
-                                   density = mean(denisty))) #should be sliced? 
+age <-  mean(mydata$age, na.rm = T)
+sex <- c("male", "female") 
+family.income <- mean(mydata$family.income, na.rm = T)
+weapon.carry <- mean(mydata$weapon.carry, na.rm = T)
+network.delinquency <- seq(0, 5, by = .1)
+popularity <- mean(mydata$popularity, na.rm = T)
+centrality <- quantile(mydata$centrality, c(.1, .5, .9), na.rm = T)
+density <- mean(mydata$density, na.rm = T)
+
+predictions <- as.tibble(expand.grid(age, sex, family.income, weapon.carry, network.delinquency, popularity, centrality, density))   
+colnames(predictions) <- c("age", "sex", "family.income",  "weapon.carry", "network.delinquency", "popularity", "centrality", "density")      
+#predictions$joinby <- seq(1:nrow(predictions))                       
 
 #Predicted Likelihood of Victimization added to the newdata 
-newdata$victim <- predict(imodel2, newdata = newdata, type = "response")
+predictions$victim <- predict(imodel2, newdata = predictions, type = "response")
+
+predictions <- predictions %>%
+  select(network.delinquency, victim, centrality)
 
 #Visualize
-ggplot(newdata, aes(x = network.delinquency, y = victim)) +
-  geom_line(color = centrality)
-```
+  ggplot(data = predictions, aes(x = predictions$network.delinquency, y = predictions$victim, group = predictions$centrality)) +
+  geom_smooth(aes(color = predictions$centrality), method = "lm" )
 
+ggplot(predictions, aes(x = network.delinquency, y = victim)) + 
+  geom_line(aes(colour = centrality))
+summary(imodel2)
+```
+newdata <- mydata.c %>%
+  select(age, sex, family.income, weapon.carry, network.delinquency, popularity, centrality, density) %>%
+  mutate(age = mean(age),
+         sex = factor(sex),
+         family.income = mean(family.income),
+         weapon.carry = mean(weapon.carry),
+         network.delinquency = network.delinquency,
+         popularity = mean(popularity),
+         centrality = quantile(centrality, c(.1, .5, .9)),
+         density = mean(denisty))
 
 ```{r}
 #Create Data
