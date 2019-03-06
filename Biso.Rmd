@@ -15,14 +15,14 @@ library(rethinking)
 library(brms)
 
 #Windows
-#load("E:/Repository/Biso/Biso/data/wave1.rda")
-#load("E:/Repository/Biso/Biso/data/network.wave1.rda")
-#load("E:/Repository/Biso/Biso/data/weights.rda")
+load("E:/Repository/Biso/Biso/data/wave1.rda")
+load("E:/Repository/Biso/Biso/data/network.wave1.rda")
+load("E:/Repository/Biso/Biso/data/weights.rda")
 
 #Mac
-load("~/desktop/Repository/Biso/data/wave1.rda")
-load("~/desktop/Repository/Biso/data/network.wave1.rda")
-load("~/desktop/Repository/Biso/data/weights.rda")
+#load("~/desktop/Repository/Biso/data/wave1.rda")
+#load("~/desktop/Repository/Biso/data/network.wave1.rda")
+#load("~/desktop/Repository/Biso/data/weights.rda")
 
 #Renamed
 wave1.data <- da21600.0001
@@ -242,11 +242,11 @@ sample <- MASS::mvrnorm(mu = imodel@coef, Sigma = imodel@vcov, n = dim*N ) %>%
   as.tibble %>% mutate(joinby = rep(1:dim, N))                       
 
 samples <- full_join(sample, predictions, by = "joinby") %>%             
-  mutate(victim = a + b1*weapon.carry + b2*network.delinquency + b3*popularity + b4*centrality + b5*density + b6*network.delinquency*centrality) %>%         
+  mutate(victim = exp(a + b1*weapon.carry + b2*network.delinquency + b3*popularity + b4*centrality + b5*density + b6*network.delinquency*centrality)) %>%         
   group_by(network.delinquency, centrality) %>%                              
-  mutate(mu = mean(victim),                                  
-        lb.mu = HPDI(victim, prob = .89)[1],                 
-        ub.mu = HPDI(victim, prob = .89)[2]) %>%             
+  mutate(p = mean(victim),                                  
+        lb.p = HPDI(victim, prob = .89)[1],                 
+        ub.p = HPDI(victim, prob = .89)[2]) %>%             
   slice(1)
 
 #Visualize: Centrality Interactions
@@ -259,9 +259,9 @@ samples <- samples %>%
     T ~ NA_character_))
 
 ggplot(samples, aes(x = network.delinquency , group = Centrality)) +
-  geom_smooth(aes(y = mu, color = Centrality) , method = "lm" ) +
-  geom_ribbon(aes(ymin = lb.mu , ymax = ub.mu) , alpha = .2)  +
-  labs(title = "Adolescent Victimization", x = "Average Delinquency in Friendship Network", y = "Likelihood of Victimization")
+  geom_line(aes(y = p, color = Centrality), size = 1.5) +
+  geom_ribbon(aes(ymin = lb.p, ymax = ub.p) , alpha = .2)  +
+  labs(title = "Adolescent Victimization", x = "Average Delinquency in Friendship Network", y = "Percent Increase in Likelihood of Victimization")
 ```
 
 ###Visualizing imodel1
@@ -284,11 +284,11 @@ sample <- MASS::mvrnorm(mu = imodel1@coef, Sigma = imodel1@vcov, n = dim*N ) %>%
   as.tibble %>% mutate(joinby = rep(1:dim, N))                       
 
 samples <- full_join(sample, predictions, by = "joinby") %>%             
-  mutate(victim = a + b1*weapon.carry + b2*network.delinquency + b3*popularity + b4*centrality + b5*density + b6*network.delinquency*popularity) %>%         
+  mutate(victim = exp(a + b1*weapon.carry + b2*network.delinquency + b3*popularity + b4*centrality + b5*density + b6*network.delinquency*popularity)) %>%         
   group_by(network.delinquency, popularity) %>%                              
-  mutate(mu = mean(victim),                                  
-        lb.mu = HPDI(victim, prob = .89)[1],                 
-        ub.mu = HPDI(victim, prob = .89)[2]) %>%             
+  mutate(p = mean(victim),                                  
+        lb.p = HPDI(victim, prob = .89)[1],                 
+        ub.p = HPDI(victim, prob = .89)[2]) %>%             
   slice(1)
 
 
@@ -303,9 +303,9 @@ samples <- samples %>%
 samples$Popularity <- as.factor(samples$Popularity)
 
 ggplot(samples, aes(x = network.delinquency , group = Popularity)) +
-  geom_smooth(aes(y = mu, color = Popularity) , method = "lm" ) +
-  geom_ribbon(aes(ymin = lb.mu , ymax = ub.mu) , alpha = .2)  +
-  labs(title = "Adolescent Victimization", x = "Average Delinquency in Friendship Network", y = "Likelihood of Victimization")
+  geom_line(aes(y = p, color = Popularity) , size = 1.5) +
+  geom_ribbon(aes(ymin = lb.p, ymax = ub.p) , alpha = .2)  +
+  labs(title = "Adolescent Victimization", x = "Average Delinquency in Friendship Network", y = "Percent Increase in Likelihood of Victimization")
 ```
 
 ###Visualizing imodel2
@@ -328,11 +328,11 @@ sample <- MASS::mvrnorm(mu = imodel2@coef, Sigma = imodel2@vcov, n = dim*N ) %>%
   as.tibble %>% mutate(joinby = rep(1:dim, N))                       
 
 samples <- full_join(sample, predictions, by = "joinby") %>%             
-  mutate(victim = a + b1*weapon.carry + b2*network.delinquency + b3*popularity + b4*centrality + b5*density + b6*network.delinquency*density) %>%         
+  mutate(victim = exp(a + b1*weapon.carry + b2*network.delinquency + b3*popularity + b4*centrality + b5*density + b6*network.delinquency*density)) %>%         
   group_by(network.delinquency, density) %>%                              
-  mutate(mu = mean(victim),                                  
-        lb.mu = HPDI(victim, prob = .89)[1],                 
-        ub.mu = HPDI(victim, prob = .89)[2]) %>%             
+  mutate(p = mean(victim),                                  
+        lb.p = HPDI(victim, prob = .89)[1],                 
+        ub.p = HPDI(victim, prob = .89)[2]) %>%             
   slice(1)
 
 
@@ -347,9 +347,9 @@ samples <- samples %>%
     T ~ NA_character_))
 
 ggplot(samples, aes(x = network.delinquency , group = Density)) +
-  geom_smooth(aes(y = mu, color = Density) , method = "lm" ) +
-  geom_ribbon(aes(ymin = lb.mu , ymax = ub.mu) , alpha = .2)  +
-  labs(title = "Adolescent Victimization", x = "Average Delinquency in Friendship Network", y = "Likelihood of Victimization")
+  geom_line(aes(y = p, color = Density) , size = 1.5) +
+  geom_ribbon(aes(ymin = lb.p , ymax = ub.p) , alpha = .2)  +
+  labs(title = "Adolescent Victimization", x = "Average Delinquency in Friendship Network", y = "Percent Increase in Likelihood of Victimization")
 ```
 
 
