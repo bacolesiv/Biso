@@ -14,27 +14,37 @@ Sociological research on adolescent crime and delinquency suggests that the soci
 ###Data
 *Add Health*
 To test a friendship network’s influence on violent victimization, this study employs the public use  data from the first wave of the National Longitudinal Study of Adolescent to Adult Health (Add Health ). The data consists of a nationally representative sample of teens, grades 7 – 12, nested in randomly selected public and private schools throughout the United States in 1994-95. Information on the sample was collected from the respondents, their peers, school administrators, parents, siblings, and romantic partners through an initial in-school survey followed by four in-home interviews. 
+
 *In-School Surveys*
 Add Health’s In-School Questionnaire, a self-administered instrument, was distributed to more than 90,000 students in grades 7 through 12 in an hour-long class period between fall 1994 and spring 1995. The questionnaire consisted of many topics, from education and parental occupation to self-esteem and risk behaviors, but most important to this study was the information collected on student’s behaviors and friendships. Respondents were asked to name their five closest female friends and their five closest male friends. In instances where the friendship nominations were members of the same school as the respondent, as more than 80 percent of nominations were, they too were respondents, meaning that data was also available on them. Because Add Health project staff assigned an identification number to each student and recorded these nominations by each student’s registered ID it is possible to reconstruct the social networks for most students. This network information makes it possible to calculate behavioral attributes present in each respondent’s own friendship (ego) network, such as delinquency, as well as test the structural influences the network may have on behavior or propensity to victimization. 
+
 *In-Home Interviews*
 Data from the more in-depth in-home interviews contains sensitive information on the adolescents such as experience with drugs and alcohol and various other risky behaviors such as carrying a weapon. One of the most advantageous components of this in-home method was the use of laptop computers which played prerecorded questions about experiences with victimization. This method of data collection helped to maintain confidentiality on numerous sensitive subjects. These self-reported experiences from the first wave of in-home interviews was used to construct the dependent variable – victim violence – for this study. Therefore, the research sample for this project comes from the in-home wave 1 respondents with the network data from the in-school survey data as an addition to the sample. The final research sample for the study consisted of 4172 observations.
 
 ###Variable Construction
 *The Dependent Variable: Violent Victimization*
 The variable victim violence is a composite indicator of victimization experienced in the twelve months prior to the wave 1 in-home interviews. It takes on the value of 0, if the respondent experienced none of the forms of physical victimization listed in Table 2, or 1 if they have experienced at least one of the forms. The variable was designed to measure purely physical manifestations of victimization i.e. being shot, stabbed or jumped. Table 1 shows that the victimization variable has a mean of .19 and a standard deviation of .39 for the research sample.
+
 *Popularity, Centrality, and Standing out*
 Being a highly visible member, that is standing out, in a delinquent network is likely to increase one’s chances of becoming a victim, as theorized above. Two variables have been chosen to operationalize this concept. Popularity is a measure of the number of friendship nominations received by the respondent. The nominations range from 0 to 30 with a mean of 4.81 and a standard deviation of 3.79. When a person receives more friendship nominations it is a stark example of high visibility with in an adolescent’s school. 
 The second operationalization of standing out is centrality. Centrality is a measure of the number of links required to link all other peers in the adolescent’s friendship network. Centrally situated adolescents stand out because they are a focal node, much of the information flowing through the network flows through members with high centrality scores. The centrality variable is calculated in the Add Health data using Bonacich’s formula (Bonacich 1987). Centrality for the research sample has a mean of .85 and a standard deviation of .62. The variable ranges from 0 to 4.29. 
+
 *Density and Blending In*
 The concept of blending in is operationalized by the variable density. A highly dense network is marked by uniformity and a lack of individuality (Bearman, 1991). When there is less individuality, each member stands out less, that is, they blend in more. High density thus functions to provide the protective shell discussed above when coupled with higher rates of peer delinquency. The variable is defined as the number of ties in the adolescent’s friendship network divided by the total number of ties possible. The variable is represented in the research sample as a percentage and ranges from 7.6 to 100. The mean for the sample is 29.72 with a standard deviation of 14.01. 
+
 *Weapon Carrying* 
 
 *Network Delinquency*
-
-
 ###Methods/Analytic Strategy: Rigorously graded, why you chose models, why these priors. 
 The dependent variable for this paper is dichotomous and therefore, the normal assumptions of ordinary least squared regression cannot be maintained. To compensate, logistic regression analysis, designed to handle dependent variables of this nature, was used to analyze the data. The logistic regression analysis for this project interprets the odds ratios for the independent variables that represent the individual variable’s influence on the likelihood of victimization while holding all other variables in the equation constant. An odds ratio of 1.5 can be understood as a 50% increase in the likelihood of violent victimization for the given variable net of the other variables present in the equation. On the other hand, an odds ratio of .5 signifies a 50% decrease in the likelihood of violent victimization for the variable in question while controlling for all other variables present in the model.
 The statistical method used in this paper anticipates victimization as the data used to construct the primary independent variables were collected in the first in-school survey while the data used to construct the variable victimization come from the in-home interviews conducted approximately a year after the first wave of in-school surveys were administered.  
+
+
+```{r}
+#Table 1: Descriptive Statistics
+
+```
+
 
 (6) Results: Answer the research question. 
 

@@ -14,6 +14,7 @@ library(corrplot)
 library(rethinking)
 library(brms)
 library(kableExtra)
+library(qwraps2)
 
 #Windows
 #load("E:/Repository/Biso/Biso/data/wave1.rda")
@@ -109,21 +110,29 @@ mydata <- mydata %>%
 
 #Renaming Network Variables
 mydata$racial.heterogeneity <- mydata$ERNRC5
-mydata$density <- mydata$ESRDEN
+mydata$dense <- mydata$ESRDEN
 mydata$centrality <- mydata$BCENT10X
 mydata$popularity <- mydata$IDGX2
+
+mydata <- mydata %>%
+  mutate(density = case_when(
+    (popularity == 0 & centrality == 0) ~ 0,
+    T ~ dense))
 
 #Variable Selection 
 mydata <- mydata %>%
   select(AID, victim, race, female, age, family.income, weapon.carry, network.delinquency, popularity, centrality, density)
+
+#Only complete rows Kept
+mydata.c <- mydata[complete.cases(mydata), ]
 ```
 
-###Descriptive Statistics & Visualizations
+###Descriptive Statistics & Tables
 ```{r}
 race.plot <- mydata %>%
   filter(race != is.na(race)) %>%
   ggplot(aes(x = race, fill = race)) +
-  geom_bar() +
+  geom_bar() + guides(fill = F) + 
   coord_flip()
 
 race.victim <- mydata %>%
@@ -142,13 +151,66 @@ b <- mydata %>%
   summarise(victim = mean(victim, na.rm = T)) #victim rate close to mean for non carriers, much higher for carriers ~ 0.58
 
 grid.arrange(race.plot, race.victim, nrow = 2, top = "Victimization & Race")
+
+#Creating the Summary Statistics 
+summary1 <- list(
+       "Victim" =
+       list("Min" = ~ min(mydata.c$victim),
+            "Max" = ~ max(mydata.c$victim),
+            "Mean (Stdv)" = ~ qwraps2::mean_sd(mydata.c$victim)),
+       "Age" =
+       list("Min" = ~ min(mydata.c$age),
+            "Max" = ~ max(mydata.c$age),
+            "Mean (Stdv)" = ~ qwraps2::mean_sd(mydata.c$age)),
+       "Sex" =
+       list("Min" = ~ min(mydata.c$female),
+            "Max" = ~ max(mydata.c$female),
+            "Mean (Stdv)" = ~ qwraps2::mean_sd(mydata.c$female)),
+       "Family Income" =
+       list("Min" = ~ min(mydata.c$family.income),
+            "Max" = ~ max(mydata.c$family.income),
+            "Mean (Stdv)" = ~ qwraps2::mean_sd(mydata.c$family.income)),
+       "Weapon Carrying" =
+       list("Min" = ~ min(mydata.c$weapon.carry),
+            "Max" = ~ max(mydata.c$weapon.carry),
+            "Mean (Stdvd)" = ~ qwraps2::mean_sd(mydata.c$weapon.carry)),
+       "Network Delinquency" =
+       list("Min" = ~ min(mydata.c$network.delinquency),
+            "Max" = ~ max(mydata.c$network.delinquency),
+            "Mean (Stdv)" = ~ qwraps2::mean_sd(mydata.c$network.delinquency),
+       "Centrality" =
+       list("Min" = ~ min(mydata.c$centrality),
+            "Max" = ~ max(mydata.c$centrality),
+            "Mean (Stdv)" = ~ qwraps2::mean_sd(mydata.c$centrality)),
+       "Popularity" =
+       list("Min" = ~ min(mydata.c$popularity),
+            "Max" = ~ max(mydata.c$popularity),
+            "Mean (Stdv)" = ~ qwraps2::mean_sd(mydata.c$popularity)),
+       "Density" =
+       list("Min" = ~ min(mydata.c$density),
+            "Max" = ~ max(mydata.c$density),
+            "Mean (Stdv)" = ~ qwraps2::mean_sd(mydata.c$density))))
+
+#Making the Table object
+options(qwraps2_markup = "markdown")
+
+mydata2 <- as.data.frame(mydata.c)
+
+table <- qwraps2::summary_table(mydata2, summary1)
+args(summary_table)
+
+(table1 <- mydata %>%
+  select(-race, -AID) %>%
+  summary() %>%
+  kable() %>%
+  kable_styling("striped", full_width = F))
+
+summary(mydata)
+
 ```
 
 ###Model Construction
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-#Only complete rows Kept
-mydata.c <- mydata[complete.cases(mydata), ]
-
 #Making models: Map logitstic regressions
 model <- map(alist(
   victim ~ dbinom(1, p),
