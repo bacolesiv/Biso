@@ -4,17 +4,14 @@ author: "Bernard A. Coles IV"
 date: "10/21/2018"
 output: html_document
 ---
-
-```{r include=FALSE}
+###Loading the Data
+```{r message=FALSE, warning=FALSE, include=FALSE}
 library(tidyverse)
 library(dplyr)
-library(igraph)
 library(gridExtra)
-library(corrplot)
 library(rethinking)
-library(brms)
 library(kableExtra)
-library(qwraps2)
+library(ggthemes)
 
 #Windows
 #load("E:/Repository/Biso/Biso/data/wave1.rda")
@@ -49,7 +46,7 @@ mydata <- merge(data1, data2, by = "AID")
 ```
 
 ###Variable Cleaning and Construction 
-```{r}
+```{r message=FALSE, warning=FALSE, include=FALSE}
 #Race variable
 mydata <- mydata %>%
   mutate(race = case_when(
@@ -85,7 +82,27 @@ mydata <- mydata %>%
     H1FV4 == "(0) (0) Never" ~ 0,
     H1FV6 == "(0) (0) Never" ~ 0,
     T ~ NA_real_))
-
+#Dependent Variable Breakdown Table 
+mydata <- mydata %>%
+  mutate(knife.gun = case_when(
+    (H1FV2 == "(1) (1) Once" |  H1FV2 == "(2) (2) More than once") ~ 1,
+    H1FV2 == "(0) (0) Never" ~ 0,
+    T ~ NA_real_))
+mydata <- mydata %>%
+  mutate(shot = case_when(
+    (H1FV3 == "(1) (1) Once" |  H1FV3 == "(2) (2) More than once") ~ 1,
+    H1FV3 == "(0) (0) Never" ~ 0,
+    T ~ NA_real_))
+mydata <- mydata %>%
+  mutate(stabbed = case_when(
+    (H1FV4 == "(1) (1) Once" |  H1FV4 == "(2) (2) More than once") ~ 1,
+    H1FV4 == "(0) (0) Never" ~ 0,
+    T ~ NA_real_))
+mydata <- mydata %>%
+  mutate(jumped = case_when(
+    (H1FV6 == "(1) (1) Once" |  H1FV6 == "(2) (2) More than once") ~ 1,
+    H1FV6 == "(0) (0) Never" ~ 0,
+    T ~ NA_real_))
 
 #Creating the Network Delinquency Variable
 mydata <- mydata %>%
@@ -120,6 +137,9 @@ mydata <- mydata %>%
     T ~ dense))
 
 #Variable Selection 
+mydata.dv <- mydata %>%
+  select(knife.gun, shot, stabbed, jumped)
+
 mydata <- mydata %>%
   select(AID, victim, race, female, age, family.income, weapon.carry, network.delinquency, popularity, centrality, density)
 
@@ -128,85 +148,78 @@ mydata.c <- mydata[complete.cases(mydata), ]
 ```
 
 ###Descriptive Statistics & Tables
-```{r}
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 race.plot <- mydata %>%
   filter(race != is.na(race)) %>%
   ggplot(aes(x = race, fill = race)) +
   geom_bar() + guides(fill = F) + 
-  coord_flip()
+  coord_flip() +
+  labs(title = "Racial Composition of Respondents", y = "Counts", x = "Self Identified Race" ) +
+  scale_colour_pander() +
+  scale_fill_pander() +
+  theme_pander() + 
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), legend.position = "none") 
 
-race.victim <- mydata %>%
-  filter(race != is.na(race)) %>%
+
+race.victim <- mydata.c %>%
   ggplot(aes(x = race)) +
-  geom_bar(aes(fill = as.character(victim)), position = "fill") + 
-  coord_flip()
+  geom_bar(aes(fill = as.character(victim)), position = "fill") + guides(fill = F) + 
+  geom_hline(yintercept=(mean(mydata.c$victim)), linetype = "dashed", color = "red3") +
+  coord_flip() +
+  labs(title = "Victimization by Race", y = "Proportion of Victims", x = "Self Identified Race") +
+  scale_colour_pander() +
+  scale_fill_pander() +
+  theme_pander() + 
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), legend.position = "none") 
 
+
+#Native American and Black Latinos are the most victimized racial groups
 a <- mydata %>%
   filter(race != is.na(race)) %>%
   group_by(race) %>%
-  summarise(victim = mean(victim, na.rm = T)) #Native American and Black Latinos are the most victimized racial groups
+  summarise(victim = mean(victim, na.rm = T)) 
 
+#victim rate close to mean for non carriers, much higher for carriers ~ 0.58
 b <- mydata %>%
   group_by(weapon.carry) %>%
-  summarise(victim = mean(victim, na.rm = T)) #victim rate close to mean for non carriers, much higher for carriers ~ 0.58
+  summarise(victim = mean(victim, na.rm = T))
 
-grid.arrange(race.plot, race.victim, nrow = 2, top = "Victimization & Race")
 
 #Creating the Summary Statistics 
-summary1 <- list(
-       "Victim" =
-       list("Min" = ~ min(mydata.c$victim),
-            "Max" = ~ max(mydata.c$victim),
-            "Mean (Stdv)" = ~ qwraps2::mean_sd(mydata.c$victim)),
-       "Age" =
-       list("Min" = ~ min(mydata.c$age),
-            "Max" = ~ max(mydata.c$age),
-            "Mean (Stdv)" = ~ qwraps2::mean_sd(mydata.c$age)),
-       "Sex" =
-       list("Min" = ~ min(mydata.c$female),
-            "Max" = ~ max(mydata.c$female),
-            "Mean (Stdv)" = ~ qwraps2::mean_sd(mydata.c$female)),
-       "Family Income" =
-       list("Min" = ~ min(mydata.c$family.income),
-            "Max" = ~ max(mydata.c$family.income),
-            "Mean (Stdv)" = ~ qwraps2::mean_sd(mydata.c$family.income)),
-       "Weapon Carrying" =
-       list("Min" = ~ min(mydata.c$weapon.carry),
-            "Max" = ~ max(mydata.c$weapon.carry),
-            "Mean (Stdvd)" = ~ qwraps2::mean_sd(mydata.c$weapon.carry)),
-       "Network Delinquency" =
-       list("Min" = ~ min(mydata.c$network.delinquency),
-            "Max" = ~ max(mydata.c$network.delinquency),
-            "Mean (Stdv)" = ~ qwraps2::mean_sd(mydata.c$network.delinquency),
-       "Centrality" =
-       list("Min" = ~ min(mydata.c$centrality),
-            "Max" = ~ max(mydata.c$centrality),
-            "Mean (Stdv)" = ~ qwraps2::mean_sd(mydata.c$centrality)),
-       "Popularity" =
-       list("Min" = ~ min(mydata.c$popularity),
-            "Max" = ~ max(mydata.c$popularity),
-            "Mean (Stdv)" = ~ qwraps2::mean_sd(mydata.c$popularity)),
-       "Density" =
-       list("Min" = ~ min(mydata.c$density),
-            "Max" = ~ max(mydata.c$density),
-            "Mean (Stdv)" = ~ qwraps2::mean_sd(mydata.c$density))))
+mydata.num <- mydata %>%
+  select(-AID, -race)
 
-#Making the Table object
-options(qwraps2_markup = "markdown")
+Mean <- sapply(mydata.num, mean, na.rm= T)
+Stdv <- sapply(mydata.num, sd, na.rm = T)
+Min <- sapply(mydata.num, min, na.rm = T)
+Median <- sapply(mydata.num, median, na.rm = T)
+Max <- sapply(mydata.num, max, na.rm = T)
 
-mydata2 <- as.data.frame(mydata.c)
+t1 <- round(cbind(Mean, Stdv, Min, Median, Max), digits=3)
 
-table <- qwraps2::summary_table(mydata2, summary1)
-args(summary_table)
+table1 <- kable(t1, "latex", booktabs = T) %>%
+  kable_styling(latex_options = "striped")
 
-(table1 <- mydata %>%
-  select(-race, -AID) %>%
-  summary() %>%
-  kable() %>%
-  kable_styling("striped", full_width = F))
+#Dependent Variable Breakdown Summary
+Proportion <- sapply(mydata.dv, mean, na.rm = T)
+cont1 <- length(which(mydata.dv$knife.gun == 1))
+cont2 <- length(which(mydata.dv$stabbed == 1))
+cont3 <- length(which(mydata.dv$shot == 1))
+cont4 <- length(which(mydata.dv$jumped == 1))
+conts <- c(cont1, cont2, cont3, cont4)
+names <- c("knife.gun", "shot", "stabbed", "jumped")
+Counts <- rbind(conts, names)
+colnames(Counts) <- names
+Counts <- Counts[-2,1:4]
+Proportion <- round(Proportion, digits = 3)
+t2 <- cbind(Proportion, Counts)
 
-summary(mydata)
+table2 <- kable(t2, "latex", booktabs = T) %>%
+  kable_styling(latex_options = "striped")
 
+table1
+table2
+grid.arrange(race.plot, race.victim, nrow = 2)
 ```
 
 ###Model Construction
@@ -273,24 +286,25 @@ m3 <- as.data.frame((imodel3@coef),1)
 ```
 
 ###Comparing the Models with Information Criteria
-```{r}
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 compare(model, imodel1, imodel3)
 compare(model, imodel2, imodel3)
+compare(model, imodel1, imodel2, imodel3)
 
 #Code to return a clean table with the best model on top -> must translate for map models 
-model_weights(b6.11, b6.12, b6.13, b6.14, 
-              weights = "waic") %>%
-  as_tibble() %>% 
-  rename(weight = value) %>% 
-  mutate(model  = c("b6.11", "b6.12", "b6.13", "b6.14"),
-         weight = weight %>% round(digits = 2)) %>% 
-  select(model, weight) %>% 
-  arrange(desc(weight)) %>% 
-  knitr::kable()
+#model_weights(b6.11, b6.12, b6.13, b6.14, 
+              #weights = "waic") %>%
+  #as_tibble() %>% 
+  #rename(weight = value) %>% 
+  #mutate(model  = c("b6.11", "b6.12", "b6.13", "b6.14"),
+         #weight = weight %>% round(digits = 2)) %>% 
+  #select(model, weight) %>% 
+  #arrange(desc(weight)) %>% 
+  #knitr::kable()
 ```
 
 ###Visualizing Centrality Model
-```{r}
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 #New data frame with variables held constant - Interaction terms held at quantiles
 age <- mean(mydata.c$age)
 female <- mean(mydata.c$female)
@@ -304,6 +318,9 @@ density <- mean(mydata.c$density)
 
 predictions <- as.tibble(expand.grid(age, female, family.income, weapon.carry, network.delinquency, popularity, centrality, density))   
 colnames(predictions) <- c("age", "female", "family.income", "weapon.carry", "network.delinquency", "popularity", "centrality", "density")      
+
+
+#inv_logit_scaled() logistic() for BRMS models that you should probably try to run. 
 
 #Predicted Likelihood of Victimization added to the newdata 
 samples <- predictions %>%             
@@ -320,13 +337,17 @@ samples <- samples %>%
     centrality == "1.70167438806094"  ~ "90th Percentile",
     T ~ NA_character_))
 
-ggplot(samples, aes(x = network.delinquency , group = Centrality)) +
+plot1 <- ggplot(samples, aes(x = network.delinquency , group = Centrality)) +
   geom_line(aes(y = victim, color = Centrality), size = 1.5) +
-  labs(title = "Adolescent Victimization", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization")
+  labs(title = "Interacting Centrality & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization") +
+  scale_colour_pander() +
+  scale_fill_pander() +
+  theme_pander() + 
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5))
 ```
 
 ###Visualizing Popularity Model 
-```{r}
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 #New data frame with variables held constant - Interaction terms held at quantiles
 age <- mean(mydata.c$age)
 female <- mean(mydata.c$female)
@@ -356,13 +377,17 @@ samples <- samples %>%
 
 samples$Popularity <- as.factor(samples$Popularity)
 
-ggplot(samples, aes(x = network.delinquency , group = Popularity)) +
+plot2 <- ggplot(samples, aes(x = network.delinquency , group = Popularity)) +
   geom_line(aes(y = victim, color = Popularity) , size = 1.5) +
-  labs(title = "Adolescent Victimization", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization")
+  labs(title = "Interacting Popularity & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization") +
+  scale_colour_pander() +
+  scale_fill_pander() +
+  theme_pander() + 
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5))
 ```
 
 ###Visualizing Density Model
-```{r}
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 #New data frame with variables held constant - Interaction terms held at quantiles
 age <- mean(mydata.c$age)
 female <- mean(mydata.c$female)
@@ -392,9 +417,13 @@ samples <- samples %>%
     density == "0.5"  ~ "90th Percentile",
     T ~ NA_character_))
 
-ggplot(samples, aes(x = network.delinquency , group = Density)) +
+plot3 <- ggplot(samples, aes(x = network.delinquency , group = Density)) +
   geom_line(aes(y = victim, color = Density) , size = 1.5) +
-  labs(title = "Adolescent Victimization", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization")
+  labs(title = "Interacting Density & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization") +
+  scale_colour_pander() +
+  scale_fill_pander() +
+  theme_pander() + 
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5))
 ```
 
 

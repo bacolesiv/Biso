@@ -1,12 +1,405 @@
 ---
 title: "Final Project"
 author: "Bernard A. Coles IV"
-date: "3/5/2019"
-output: pdf_document
+date: "3/9/2019"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
 ---
-(1) Research Question
-(2) Not Necessary to deep dive into theory
-###Introduction #1paragraph only
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+library(tidyverse)
+library(dplyr)
+library(gridExtra)
+library(rethinking)
+library(kableExtra)
+library(ggthemes)
+
+#Windows
+#load("E:/Repository/Biso/Biso/data/wave1.rda")
+#load("E:/Repository/Biso/Biso/data/network.wave1.rda")
+#load("E:/Repository/Biso/Biso/data/weights.rda")
+
+#Mac
+load("~/desktop/Repository/Biso/data/wave1.rda")
+load("~/desktop/Repository/Biso/data/network.wave1.rda")
+load("~/desktop/Repository/Biso/data/weights.rda")
+
+#Renamed
+wave1.data <- da21600.0001
+network.data <- da21600.0003
+weights <- da21600.0004
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+#Merging Relevant Variables into one Data Frame
+data1 <- wave1.data %>%
+  dplyr :: select(AID, H1FV2, H1FV3, H1FV4, H1FV6, S6A, S6B, S6C, S6D, S6E, S4, S1, S2, PA55, H1FV9)
+
+data2 <-  network.data %>%
+  dplyr :: select(AID, ESRDEN, BCENT10X, IDGX2, SEG1RCE5, ERNRC5, EHRC5, AXS59A, AXS59B, AXS59C, AXS59D, AXS59E, AXS59F, AXS59G, SRCE51, SRCE52, SRCE53, SRCE54, SRCE55)
+
+data3 <- weights %>%
+  dplyr :: select(AID, GSWGT1)
+
+mydata <- merge(data1, data2, by = "AID") 
+#mydata <- merge(my.data, data3, by = "AID")
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+#Race variable
+mydata <- mydata %>%
+  mutate(race = case_when(
+    (S4 == "(1) (1) Yes (go to Q.5)" & S6A == "(1) (1) Marked") ~ "white latino",
+    (S4 == "(1) (1) Yes (go to Q.5)" & S6B == "(1) (1) Marked") ~ "black latino",
+    (S6A == "(1) (1) Marked" & S6B== "(1) (1) Marked") ~ "mixed race",
+    (S6A == "(1) (1) Marked" & S6C == "(1) (1) Marked") ~ "mixed race",
+    (S6A == "(1) (1) Marked" & S6D == "(1) (1) Marked") ~ "mixed race",
+    (S6A == "(1) (1) Marked" & S6E == "(1) (1) Marked") ~ "mixed race",
+    (S6B == "(1) (1) Marked" & S6C == "(1) (1) Marked") ~ "mixed race",
+    (S6B == "(1) (1) Marked" & S6D == "(1) (1) Marked") ~ "mixed race",
+    (S6B == "(1) (1) Marked" & S6E == "(1) (1) Marked") ~ "mixed race",
+    (S6C == "(1) (1) Marked" & S6D == "(1) (1) Marked") ~ "mixed race",
+    (S6C == "(1) (1) Marked" & S6E == "(1) (1) Marked") ~ "mixed race",
+    (S6D == "(1) (1) Marked" & S6E == "(1) (1) Marked") ~ "mixed race",
+    S4 == "(1) (1) Yes (go to Q.5)" ~ "latino", 
+    S6A == "(1) (1) Marked" ~ "white",
+    S6B == "(1) (1) Marked" ~ "black", 
+    S6C == "(1) (1) Marked" ~ "asian", 
+    S6D == "(1) (1) Marked" ~ "native american", 
+    S6E == "(1) (1) Marked" ~ "other",
+    T ~ NA_character_))
+
+#Victimization
+mydata <- mydata %>%
+  mutate(victim = case_when(
+    (H1FV2 == "(1) (1) Once" |  H1FV2 == "(2) (2) More than once") ~ 1,
+    (H1FV3 == "(1) (1) Once" |  H1FV3 == "(2) (2) More than once") ~ 1,
+    (H1FV4 == "(1) (1) Once" |  H1FV4 == "(2) (2) More than once") ~ 1,
+    (H1FV6 == "(1) (1) Once" |  H1FV6 == "(2) (2) More than once") ~ 1,
+    H1FV2 == "(0) (0) Never" ~ 0,
+    H1FV3 == "(0) (0) Never" ~ 0,
+    H1FV4 == "(0) (0) Never" ~ 0,
+    H1FV6 == "(0) (0) Never" ~ 0,
+    T ~ NA_real_))
+#Dependent Variable Breakdown Table 
+mydata <- mydata %>%
+  mutate(knife.gun = case_when(
+    (H1FV2 == "(1) (1) Once" |  H1FV2 == "(2) (2) More than once") ~ 1,
+    H1FV2 == "(0) (0) Never" ~ 0,
+    T ~ NA_real_))
+mydata <- mydata %>%
+  mutate(shot = case_when(
+    (H1FV3 == "(1) (1) Once" |  H1FV3 == "(2) (2) More than once") ~ 1,
+    H1FV3 == "(0) (0) Never" ~ 0,
+    T ~ NA_real_))
+mydata <- mydata %>%
+  mutate(stabbed = case_when(
+    (H1FV4 == "(1) (1) Once" |  H1FV4 == "(2) (2) More than once") ~ 1,
+    H1FV4 == "(0) (0) Never" ~ 0,
+    T ~ NA_real_))
+mydata <- mydata %>%
+  mutate(jumped = case_when(
+    (H1FV6 == "(1) (1) Once" |  H1FV6 == "(2) (2) More than once") ~ 1,
+    H1FV6 == "(0) (0) Never" ~ 0,
+    T ~ NA_real_))
+
+#Creating the Network Delinquency Variable
+mydata <- mydata %>%
+  mutate(network.delinquency = (AXS59A + AXS59B + AXS59C + AXS59D + AXS59E + AXS59F + AXS59G)/7) 
+
+#Cleaning Control Variables 
+mydata <- mydata %>%
+  mutate(female = case_when(
+    S2 == "(1) (1) Male" ~ 0,
+    S2 == "(2) (2) Female" ~ 1,
+    T ~ NA_real_))
+
+mydata$age <- mydata$S1
+mydata$family.income <- mydata$PA55
+
+
+mydata <- mydata %>%
+  mutate(weapon.carry = case_when(
+    H1FV9 == "(0) (0) None (skip to Q.11)" ~ 0, 
+    (H1FV9 == "(1) (1) 1 day" | H1FV9 == "(2) (2) 2 or 3 days" | H1FV9 == "(3) (3) 4 or 5 days" | H1FV9 == "(4) (4) 6 or more days") ~ 1,
+    T ~ NA_real_))
+
+#Renaming Network Variables
+mydata$racial.heterogeneity <- mydata$ERNRC5
+mydata$dense <- mydata$ESRDEN
+mydata$centrality <- mydata$BCENT10X
+mydata$popularity <- mydata$IDGX2
+
+mydata <- mydata %>%
+  mutate(density = case_when(
+    (popularity == 0 & centrality == 0) ~ 0,
+    T ~ dense))
+
+#Variable Selection 
+mydata.dv <- mydata %>%
+  select(knife.gun, shot, stabbed, jumped)
+
+mydata <- mydata %>%
+  select(AID, victim, race, female, age, family.income, weapon.carry, network.delinquency, popularity, centrality, density)
+
+#Only complete rows Kept
+mydata.c <- mydata[complete.cases(mydata), ]
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+race.plot <- mydata %>%
+  filter(race != is.na(race)) %>%
+  ggplot(aes(x = race, fill = race)) +
+  geom_bar() + guides(fill = F) + 
+  coord_flip() +
+  labs(title = "Racial Composition of Respondents", y = "Counts", x = "Self Identified Race" ) +
+  scale_colour_pander() +
+  scale_fill_pander() +
+  theme_pander() + 
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), legend.position = "none") 
+
+
+race.victim <- mydata.c %>%
+  ggplot(aes(x = race)) +
+  geom_bar(aes(fill = as.character(victim)), position = "fill") + guides(fill = F) + 
+  geom_hline(yintercept=(mean(mydata.c$victim)), linetype = "dashed", color = "red3") +
+  coord_flip() +
+  labs(title = "Victimization by Race", y = "Proportion of Victims", x = "Self Identified Race") +
+  scale_colour_pander() +
+  scale_fill_pander() +
+  theme_pander() + 
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), legend.position = "none") 
+
+
+#Native American and Black Latinos are the most victimized racial groups
+a <- mydata %>%
+  filter(race != is.na(race)) %>%
+  group_by(race) %>%
+  summarise(victim = mean(victim, na.rm = T)) 
+
+#victim rate close to mean for non carriers, much higher for carriers ~ 0.58
+b <- mydata %>%
+  group_by(weapon.carry) %>%
+  summarise(victim = mean(victim, na.rm = T))
+
+
+#Creating the Summary Statistics 
+mydata.num <- mydata %>%
+  select(-AID, -race)
+
+Mean <- sapply(mydata.num, mean, na.rm= T)
+Stdv <- sapply(mydata.num, sd, na.rm = T)
+Min <- sapply(mydata.num, min, na.rm = T)
+Median <- sapply(mydata.num, median, na.rm = T)
+Max <- sapply(mydata.num, max, na.rm = T)
+
+t1 <- round(cbind(Mean, Stdv, Min, Median, Max), digits=3)
+
+table1 <- kable(t1, "latex", booktabs = T) %>%
+  kable_styling(latex_options = "striped")
+
+#Dependent Variable Breakdown Summary
+Proportion <- sapply(mydata.dv, mean, na.rm = T)
+cont1 <- length(which(mydata.dv$knife.gun == 1))
+cont2 <- length(which(mydata.dv$stabbed == 1))
+cont3 <- length(which(mydata.dv$shot == 1))
+cont4 <- length(which(mydata.dv$jumped == 1))
+conts <- c(cont1, cont2, cont3, cont4)
+names <- c("knife.gun", "shot", "stabbed", "jumped")
+Counts <- rbind(conts, names)
+colnames(Counts) <- names
+Counts <- Counts[-2,1:4]
+Proportion <- round(Proportion, digits = 3)
+t2 <- cbind(Proportion, Counts)
+
+table2 <- kable(t2, "latex", booktabs = T) %>%
+  kable_styling(latex_options = "striped")
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+#Making models: Map logitstic regressions
+model <- map(alist(
+  victim ~ dbinom(1, p),
+  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*network.delinquency + b6*popularity + b7*centrality + b8*density,
+  a ~ dnorm(0,10),
+  b1 ~ dnorm(0,10),
+  b2 ~ dnorm(0,10),
+  b3 ~ dnorm(0,10),
+  b4 ~ dnorm(0,10),
+  b5 ~ dnorm(0,10),
+  b6 ~ dnorm(0,10), 
+  b7 ~ dnorm(0,10), 
+  b8 ~ dnorm(0,10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0))
+
+imodel1 <- map(alist(
+  victim ~ dbinom(1, p),
+  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*network.delinquency + b6*popularity + b7*centrality + b8*density + b9*network.delinquency*centrality,
+  a ~ dnorm(0,10),
+  b1 ~ dnorm(0,10),
+  b2 ~ dnorm(0,10),
+  b3 ~ dnorm(0,10),
+  b4 ~ dnorm(0,10),
+  b5 ~ dnorm(0,10),
+  b6 ~ dnorm(0,10), 
+  b7 ~ dnorm(0,10), 
+  b8 ~ dnorm(0,10), 
+  b9 ~ dnorm(0,10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0))
+
+imodel2 <- map(alist(
+  victim ~ dbinom(1, p),
+  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*network.delinquency + b6*popularity + b7*centrality + b8*density + b9*network.delinquency*popularity,
+  a ~ dnorm(0,10),
+  b1 ~ dnorm(0,10),
+  b2 ~ dnorm(0,10),
+  b3 ~ dnorm(0,10),
+  b4 ~ dnorm(0,10),
+  b5 ~ dnorm(0,10),
+  b6 ~ dnorm(0,10), 
+  b7 ~ dnorm(0,10), 
+  b8 ~ dnorm(0,10), 
+  b9 ~ dnorm(0,10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0))
+
+imodel3 <- map(alist(
+  victim ~ dbinom(1, p),
+  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*network.delinquency + b6*popularity + b7*centrality + b8*density + b9*network.delinquency*density,
+  a ~ dnorm(0,10),
+  b1 ~ dnorm(0,10),
+  b2 ~ dnorm(0,10),
+  b3 ~ dnorm(0,10),
+  b4 ~ dnorm(0,10),
+  b5 ~ dnorm(0,10),
+  b6 ~ dnorm(0,10), 
+  b7 ~ dnorm(0,10), 
+  b8 ~ dnorm(0,10), 
+  b9 ~ dnorm(0,10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0))
+
+m1 <- as.data.frame((imodel1@coef),1)
+m2 <- as.data.frame((imodel2@coef),1)
+m3 <- as.data.frame((imodel3@coef),1)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+#New data frame with variables held constant - Interaction terms held at quantiles
+age <- mean(mydata.c$age)
+female <- mean(mydata.c$female)
+family.income <- mean(mydata.c$family.income)
+weapon.carry <- mean(mydata.c$weapon.carry)
+network.delinquency <- seq(0, 5, by = .1)
+popularity <- mean(mydata.c$popularity)
+centrality <- quantile(mydata.c$centrality, c(.1, .5, .9))
+density <- mean(mydata.c$density)
+
+
+predictions <- as.tibble(expand.grid(age, female, family.income, weapon.carry, network.delinquency, popularity, centrality, density))   
+colnames(predictions) <- c("age", "female", "family.income", "weapon.carry", "network.delinquency", "popularity", "centrality", "density")      
+
+
+#inv_logit_scaled() logistic() for BRMS models that you should probably try to run. 
+
+#Predicted Likelihood of Victimization added to the newdata 
+samples <- predictions %>%             
+  mutate(victim = logistic(m1[10,] + m1[1,]*age + m1[2,]*female + m1[3,]*family.income + m1[4,]*weapon.carry + m1[5,]*network.delinquency + m1[6,]*popularity + m1[7,]*centrality + m1[8,]*density + m1[9,]*network.delinquency*centrality)) %>%         
+  group_by(network.delinquency, centrality) %>%                              
+  slice(1)
+
+#Visualize: Centrality Interactions
+samples$centrality <- as.character(samples$centrality)
+samples <- samples %>%
+  mutate(Centrality = case_when(
+    centrality == "0" ~ "10th Percentile",
+    centrality == "0.7867627910904" ~ "50th Percentile",
+    centrality == "1.70167438806094"  ~ "90th Percentile",
+    T ~ NA_character_))
+
+plot1 <- ggplot(samples, aes(x = network.delinquency , group = Centrality)) +
+  geom_line(aes(y = victim, color = Centrality), size = 1.5) +
+  labs(title = "Interacting Centrality & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization") +
+  scale_colour_pander() +
+  scale_fill_pander() +
+  theme_pander() + 
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5))
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+#New data frame with variables held constant - Interaction terms held at quantiles
+age <- mean(mydata.c$age)
+female <- mean(mydata.c$female)
+family.income <- mean(mydata.c$family.income)
+weapon.carry <- mean(mydata.c$weapon.carry, na.rm = T)
+network.delinquency <- seq(0, 5, by = .1)
+centrality <- mean(mydata.c$centrality, na.rm = T)
+popularity <- quantile(mydata.c$popularity, c(.1, .5, .9))
+density <- mean(mydata.c$density, na.rm = T)
+
+predictions <- as.tibble(expand.grid(age, female, family.income, weapon.carry, network.delinquency, popularity, centrality, density))   
+colnames(predictions) <- c("age", "female", "family.income", "weapon.carry", "network.delinquency", "popularity", "centrality", "density")      
+
+#Predicted Likelihood of Victimization added to the newdata 
+samples <- predictions %>%             
+  mutate(victim = logistic(m2[10,] + m2[1,]*age + m2[2,]*female + m2[3,]*family.income + m2[4,]*weapon.carry + m2[5,]*network.delinquency + m2[6,]*popularity + m2[7,]*centrality + m2[8,]*density + m2[9,]*network.delinquency*popularity)) %>%         
+  group_by(network.delinquency, popularity) %>%                              
+  slice(1)
+
+#Visualize: Centrality Interactions
+samples <- samples %>%
+  mutate(Popularity = case_when(
+    popularity == 1 ~ "10th Percentile",
+    popularity == 4 ~ "50th Percentile",
+    popularity == 10  ~ "90th Percentile",
+    T ~ NA_character_))
+
+samples$Popularity <- as.factor(samples$Popularity)
+
+plot2 <- ggplot(samples, aes(x = network.delinquency , group = Popularity)) +
+  geom_line(aes(y = victim, color = Popularity) , size = 1.5) +
+  labs(title = "Interacting Popularity & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization") +
+  scale_colour_pander() +
+  scale_fill_pander() +
+  theme_pander() + 
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5))
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+#New data frame with variables held constant - Interaction terms held at quantiles
+age <- mean(mydata.c$age)
+female <- mean(mydata.c$female)
+family.income <- mean(mydata.c$family.income)
+weapon.carry <- mean(mydata.c$weapon.carry, na.rm = T)
+network.delinquency <- seq(0, 5, by = .1)
+centrality <- mean(mydata.c$centrality, na.rm = T)
+density <- quantile(mydata.c$density, c(.1, .5, .9))
+popularity <- mean(mydata.c$popularity, na.rm = T)
+
+predictions <- as.tibble(expand.grid(age, female, family.income, weapon.carry, network.delinquency, popularity, centrality, density))   
+colnames(predictions) <- c("age", "female", "family.income", "weapon.carry", "network.delinquency", "popularity", "centrality", "density")      
+#Predicted Likelihood of Victimization added to the newdata 
+samples <- predictions%>%             
+  mutate(victim = logistic(m3[10,] + m3[1,]*age + m3[2,]*female + m3[3,]*family.income + m3[4,]*weapon.carry + m3[5,]*network.delinquency + m3[6,]*popularity + m3[7,]*centrality + m3[8,]*density + m3[9,]*network.delinquency*density))%>%         
+  group_by(network.delinquency, density) %>%                              
+  slice(1)
+
+
+#Visualize: Centrality Interactions
+samples$density <- as.character(samples$density)
+
+samples <- samples %>%
+  mutate(Density = case_when(
+    density == "0.1571428571429" ~ "10th Percentile",
+    density == "0.2619047619048" ~ "50th Percentile",
+    density == "0.5"  ~ "90th Percentile",
+    T ~ NA_character_))
+
+plot3 <- ggplot(samples, aes(x = network.delinquency , group = Density)) +
+  geom_line(aes(y = victim, color = Density) , size = 1.5) +
+  labs(title = "Interacting Density & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization") +
+  scale_colour_pander() +
+  scale_fill_pander() +
+  theme_pander() + 
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5))
+```
+
+###Introduction
 The formative years in the lives of many American teenagers take place within the context of public or private school systems. In these contexts, teens are consistently exposed to many opportunities to practice forming and maintaining social relationships. One potential outcome of adolescent social relations is the risk of engaging with delinquency and violence, especially when teens are unsupervised (Haynie & Osgood 2005). Adolescents remain at increased risk for victimization when compared to other age groups. In 1997, 202, 000 students were victims of nonfatal serious violent crimes at school, including rape, sexual assault, robbery, and aggravated assault. When adding simple assault to the above, a total of 1.1 million students were classified as being victimized in school (Van Dorn 2004). In fact, in the United States youth are more than 2.3 times more likely than the general population to be victims (Hanish and Guerra 2000). Important for this study are instances of serious nonfatal forms of victimization and their relationship to the content or behavioral norms of the network and the structural characteristics of the respondent’s position within the network. 
 School-based risk factors for victimization have been studied extensively since data was collected for the 1977 Safe School Study conducted by the National Institute of Education (Van Dorn 2004). Some often-identified correlates of victimization are age and gender, which repeatedly show that younger adolescents and males are at the greatest risk of physical victimization (Warr, 1993). The prevalence, severity, and impacts of this problem have prompted increasing attention in recent years by national and international researchers who are committed to providing youth with safer schools (Hanish and Guerra 2000). However, Van Dorn (2004) found that school-based safety precautions did not significantly reduce violent victimization and only showed a trend toward significance with nonviolent victimization, suggesting that our high schools have much to improve regarding policies geared towards preventing teens from engaging in violence on campus. 
 Sociological research on adolescent crime and delinquency suggests that the social characteristics of an adolescent’s community heavily influence the likelihood of that adolescent’s involvement in delinquent behavior and perhaps the likelihood of their victimization (Hanish and Guerra 2000; Schreck, Fisher, and Miller 2004; Mouttapa, Valente, Gallaher, Rohrbach and Unger 2004; Sampson 1984; Moody 2001; Berg, Brunson, and Stewart 2012; Sampson and Groves 1989; Pridemore 2002; Evans and Smokoski 2016; Shaw and Mckay ([1942] 1969); Hirschi 1969; Sutherland and Cressey 1974). Schreck et al. (2004) speculate that research on victimization could benefit from studies emphasizing the peer influences generated by delinquent groups, because delinquency and victimization share many empirical connections. Their study identified peer delinquency as a significant risk factor for violent victimization. Additionally, Hirschi’s (1969) theory of social control and Sutherland’s (1974) theory of differential association have both empirically verified a connection between social networks and delinquency/crime and have been adapted and replicated by modern sociologists such as Haynie (2001), Matsueda (1982), and Mangino (2009). For example, Haynie (2001) shows that any structural network location that puts one in a position of greater influence within the group amplifies an individual’s delinquency above the delinquent content of the peer network. Just as there is a relationship between network position and delinquency, it follows, that there is a likely connection between the social network occupied by an adolescent and his/her chances of becoming a victim. However, the likelihood of victimization compared to the propensity towards delinquency may function differently in terms of causal mechanisms, particularly the mediating effects of the network’s structure. I posit that network structure influences how an individual may learn appropriate behavior and that the specific behaviors they adopt will either enhance or limit their exposure to violence. 
@@ -23,7 +416,12 @@ Data from the more in-depth in-home interviews contains sensitive information on
 
 ###Variable Construction
 *The Dependent Variable: Violent Victimization*
-The variable victim violence is a composite indicator of victimization experienced in the twelve months prior to the wave 1 in-home interviews. It takes on the value of 0, if the respondent experienced none of the forms of physical victimization listed in Table 2, or 1 if they have experienced at least one of the forms. The variable was designed to measure purely physical manifestations of victimization i.e. being shot, stabbed or jumped. Table 1 shows that the victimization variable has a mean of .19 and a standard deviation of .39 for the research sample.
+The variable victim is a composite indicator of victimization experienced in the twelve months prior to the wave 1 in-home interviews. It takes on the value of 0, if the respondent experienced none of the forms of physical victimization listed in Table 2, or 1 if they have experienced at least one of the forms. The variable was designed to measure purely physical manifestations of victimization i.e. being shot, stabbed or jumped. Table 1 shows that the victimization variable has a mean of .19 and a standard deviation of .39 for the research sample.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+table2
+```
+
 
 *Popularity, Centrality, and Standing out*
 Being a highly visible member, that is standing out, in a delinquent network is likely to increase one’s chances of becoming a victim, as theorized above. Two variables have been chosen to operationalize this concept. Popularity is a measure of the number of friendship nominations received by the respondent. The nominations range from 0 to 30 with a mean of 4.81 and a standard deviation of 3.79. When a person receives more friendship nominations it is a stark example of high visibility with in an adolescent’s school. 
@@ -39,12 +437,14 @@ The concept of blending in is operationalized by the variable density. A highly 
 The dependent variable for this paper is dichotomous and therefore, the normal assumptions of ordinary least squared regression cannot be maintained. To compensate, logistic regression analysis, designed to handle dependent variables of this nature, was used to analyze the data. The logistic regression analysis for this project interprets the odds ratios for the independent variables that represent the individual variable’s influence on the likelihood of victimization while holding all other variables in the equation constant. An odds ratio of 1.5 can be understood as a 50% increase in the likelihood of violent victimization for the given variable net of the other variables present in the equation. On the other hand, an odds ratio of .5 signifies a 50% decrease in the likelihood of violent victimization for the variable in question while controlling for all other variables present in the model.
 The statistical method used in this paper anticipates victimization as the data used to construct the primary independent variables were collected in the first in-school survey while the data used to construct the variable victimization come from the in-home interviews conducted approximately a year after the first wave of in-school surveys were administered.  
 
-
-```{r}
-#Table 1: Descriptive Statistics
-
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+table1
 ```
 
-
-(6) Results: Answer the research question. 
+###Results
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+plot1
+plot2
+plot3
+```
 
