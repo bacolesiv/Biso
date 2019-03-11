@@ -12,6 +12,7 @@ library(gridExtra)
 library(rethinking)
 library(kableExtra)
 library(ggthemes)
+library(knitr)
 
 #Windows
 #load("E:/Repository/Biso/Biso/data/wave1.rda")
@@ -118,7 +119,6 @@ mydata <- mydata %>%
 mydata$age <- mydata$S1
 mydata$family.income <- mydata$PA55
 
-
 mydata <- mydata %>%
   mutate(weapon.carry = case_when(
     H1FV9 == "(0) (0) None (skip to Q.11)" ~ 0, 
@@ -147,84 +147,8 @@ mydata <- mydata %>%
 mydata.c <- mydata[complete.cases(mydata), ]
 ```
 
-###Descriptive Statistics & Tables
-```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-race.plot <- mydata %>%
-  filter(race != is.na(race)) %>%
-  ggplot(aes(x = race, fill = race)) +
-  geom_bar() + guides(fill = F) + 
-  coord_flip() +
-  labs(title = "Racial Composition of Respondents", y = "Counts", x = "Self Identified Race" ) +
-  scale_colour_pander() +
-  scale_fill_pander() +
-  theme_pander() + 
-  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), legend.position = "none") 
-
-
-race.victim <- mydata.c %>%
-  ggplot(aes(x = race)) +
-  geom_bar(aes(fill = as.character(victim)), position = "fill") + guides(fill = F) + 
-  geom_hline(yintercept=(mean(mydata.c$victim)), linetype = "dashed", color = "red3") +
-  coord_flip() +
-  labs(title = "Victimization by Race", y = "Proportion of Victims", x = "Self Identified Race") +
-  scale_colour_pander() +
-  scale_fill_pander() +
-  theme_pander() + 
-  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), legend.position = "none") 
-
-
-#Native American and Black Latinos are the most victimized racial groups
-a <- mydata %>%
-  filter(race != is.na(race)) %>%
-  group_by(race) %>%
-  summarise(victim = mean(victim, na.rm = T)) 
-
-#victim rate close to mean for non carriers, much higher for carriers ~ 0.58
-b <- mydata %>%
-  group_by(weapon.carry) %>%
-  summarise(victim = mean(victim, na.rm = T))
-
-
-#Creating the Summary Statistics 
-mydata.num <- mydata %>%
-  select(-AID, -race)
-
-Mean <- sapply(mydata.num, mean, na.rm= T)
-Stdv <- sapply(mydata.num, sd, na.rm = T)
-Min <- sapply(mydata.num, min, na.rm = T)
-Median <- sapply(mydata.num, median, na.rm = T)
-Max <- sapply(mydata.num, max, na.rm = T)
-
-t1 <- round(cbind(Mean, Stdv, Min, Median, Max), digits=3)
-
-table1 <- kable(t1, "latex", booktabs = T) %>%
-  kable_styling(latex_options = "striped")
-
-#Dependent Variable Breakdown Summary
-Proportion <- sapply(mydata.dv, mean, na.rm = T)
-cont1 <- length(which(mydata.dv$knife.gun == 1))
-cont2 <- length(which(mydata.dv$stabbed == 1))
-cont3 <- length(which(mydata.dv$shot == 1))
-cont4 <- length(which(mydata.dv$jumped == 1))
-conts <- c(cont1, cont2, cont3, cont4)
-names <- c("knife.gun", "shot", "stabbed", "jumped")
-Counts <- rbind(conts, names)
-colnames(Counts) <- names
-Counts <- Counts[-2,1:4]
-Proportion <- round(Proportion, digits = 3)
-t2 <- cbind(Proportion, Counts)
-
-table2 <- kable(t2, "latex", booktabs = T) %>%
-  kable_styling(latex_options = "striped")
-
-table1
-table2
-grid.arrange(race.plot, race.victim, nrow = 2)
-```
-
 ###Model Construction
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-#Making models: Map logitstic regressions
 model <- map(alist(
   victim ~ dbinom(1, p),
   logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*network.delinquency + b6*popularity + b7*centrality + b8*density,
@@ -280,9 +204,144 @@ imodel3 <- map(alist(
   b8 ~ dnorm(0,10), 
   b9 ~ dnorm(0,10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0))
 
+m <- as.data.frame((model@coef),1)
 m1 <- as.data.frame((imodel1@coef),1)
 m2 <- as.data.frame((imodel2@coef),1)
 m3 <- as.data.frame((imodel3@coef),1)
+
+t4 <- m %>%
+  mutate(OR = exp((model@coef))) %>%
+  select(OR)
+
+x <- m1 %>%
+  mutate(OR = exp((imodel1@coef))) %>%
+  select(OR)
+
+y <- m2 %>%
+  mutate(OR = exp((imodel2@coef))) %>%
+  select(OR)
+
+z <- m3 %>%
+  mutate(OR = exp((imodel3@coef)))%>%
+  select(OR)
+
+inames <- c("Age", "Sex", "Family Income", "Weapon Carry", "Network Delinquency", "Popularity", "Centrality", "Density", "Interaction Term", "Intercept")
+
+names <- c("Age", "Sex", "Family Income", "Weapon Carry", "Network Delinquency", "Popularity", "Centrality", "Density", "Intercept")
+
+rownames(t4) <- names
+rownames(m1) <- inames 
+rownames(m2) <- inames 
+rownames(m3) <- inames 
+
+
+t5 <- cbind(x, y, z)
+
+table4 <- kable(t4, caption = "Logistic Regression Model", "latex", booktabs = T) %>%
+  add_header_above(c("Predictors", "Model 1" = 1)) %>%
+  kable_styling("striped")
+
+table5 <- kable(t5, caption = "Interaction Models", "latex", booktabs = T) %>%
+  add_header_above(c("Predictors", "Model 2" = 1, "Model 3" = 1, "Model 4" = 1)) %>%
+  kable_styling("striped")
+```
+
+###Descriptive Statistics & Tables
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+race.plot <- mydata %>%
+  filter(race != is.na(race)) %>%
+  ggplot(aes(x = race, fill = race)) +
+  geom_bar() + guides(fill = F) + 
+  coord_flip() +
+  labs(title = "Racial Composition of Respondents", y = "Counts") +
+  scale_colour_pander() +
+  scale_fill_pander() +
+  theme_pander() + 
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), legend.position = "none") 
+
+
+race.victim <- mydata.c %>%
+  ggplot(aes(x = race)) +
+  geom_bar(aes(fill = as.character(victim)), position = "fill") + guides(fill = F) + 
+  geom_hline(yintercept=(mean(mydata.c$victim)), linetype = "dashed", color = "red3") +
+  coord_flip() +
+  labs(title = "Victimization by Race", y = "Proportion of Victims") +
+  scale_colour_pander() +
+  scale_fill_pander() +
+  theme_pander() + 
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), legend.position = "none") 
+
+
+#Native American and Black Latinos are the most victimized racial groups
+a <- mydata %>%
+  filter(race != is.na(race)) %>%
+  group_by(race) %>%
+  summarise(victim = mean(victim, na.rm = T)) 
+
+#victim rate close to mean for non carriers, much higher for carriers ~ 0.58
+b <- mydata %>%
+  group_by(weapon.carry) %>%
+  summarise(victim = mean(victim, na.rm = T))
+
+#Dependent Variable Breakdown Summary
+Proportion <- sapply(mydata.dv, mean, na.rm = T)
+cont1 <- length(which(mydata.dv$knife.gun == 1))
+cont2 <- length(which(mydata.dv$shot == 1))
+cont3 <- length(which(mydata.dv$stabbed == 1))
+cont4 <- length(which(mydata.dv$jumped == 1))
+conts <- c(cont1, cont2, cont3, cont4)
+
+names <- c("knife.gun", "shot", "stabbed", "jumped")
+Counts <- rbind(conts, names)
+colnames(Counts) <- names
+Counts <- Counts[-2,1:4]
+Proportion <- round(Proportion, digits = 3)
+t1 <- cbind(Proportion, Counts)
+
+table1 <- kable(t1, "latex", caption = "Dependent Variable Index", booktabs = T) %>%
+  kable_styling(latex_options = "striped") %>%
+  footnote(general = "N = 3145")
+
+
+#Creating the Summary Statistics 
+mydata.num <- mydata %>%
+  select(-AID, -race)
+
+Mean <- sapply(mydata.num, mean, na.rm= T)
+Stdv <- sapply(mydata.num, sd, na.rm = T)
+Min <- sapply(mydata.num, min, na.rm = T)
+Median <- sapply(mydata.num, median, na.rm = T)
+Max <- sapply(mydata.num, max, na.rm = T)
+
+t2 <- data.frame(
+  Items = c("Question 1","Question 2","Question 3","Question 4","Question 5","Question 6","Question 7"),
+  Features = c("During the past twelve months, how often did you smoke cigarettes?", "During the past twelve months, how often did you drink beer, wine, liqour?", "During the past twelve months, how often did you get drunk?", "During the past twelve months, how often did you race on a bike, skateboard, roller blades, or in a boat or car?", "During the past twelve months, how often did you do something dangerous because you were dared to?", "During the past twelve months, how often did you lie to your parents or guardians?", "During the past twelve months, how often did you skip school without an excuse?"))
+
+table2 <- kable(t2, caption = "Friendship Network Delinquency Index" , "latex", booktabs = T) %>% 
+  kable_styling(full_width = F) %>% 
+  column_spec(1, bold = T) %>% 
+  column_spec(2, width = "30em")
+
+t3 <- round(cbind(Mean, Stdv, Min, Median, Max), digits=3)
+
+table3 <- kable(t3, caption = "Descriptive Statistics","latex", booktabs = T) %>%
+  kable_styling(latex_options = "striped") %>%
+  footnote(general = "N = 3145")
+
+table4 <- kable(t4, caption = "Logistic Regression Model","latex", booktabs = T) %>%
+  kable_styling(latex_options = "striped") %>%
+  footnote(general = "N = 3145")
+
+table5 <- kable(t5, caption = "Interaction Models", "latex", booktabs = T) %>%
+  kable_styling(latex_options = "striped") %>%
+  footnote(general = "N = 3145")
+
+table1
+table2
+table3
+table4
+table5
+grid.arrange(race.plot, race.victim, nrow = 2)
 ```
 
 ###Comparing the Models with Information Criteria
