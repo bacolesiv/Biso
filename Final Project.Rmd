@@ -11,6 +11,7 @@ output:
 library(tidyverse)
 library(dplyr)
 library(gridExtra)
+library(grid)
 library(rethinking)
 library(kableExtra)
 library(ggthemes)
@@ -133,9 +134,13 @@ mydata$centrality <- mydata$BCENT10X
 mydata$popularity <- mydata$IDGX2
 
 mydata <- mydata %>%
-  mutate(density = case_when(
+  mutate(den = case_when(
     (popularity == 0 & centrality == 0) ~ 0,
     T ~ dense))
+
+
+mydata <- mydata %>%
+  mutate(density = den*100)
 
 #Variable Selection 
 mydata.dv <- mydata %>%
@@ -225,6 +230,11 @@ z <- m3 %>%
   mutate(OR = exp((imodel3@coef)))%>%
   select(OR)
 
+t4 <- round(t4, digits = 3)
+x <- round(x, digits = 3)
+y <- round(y, digits = 3)
+z <- round(z, digits = 3)
+
 inames <- c("Age", "Sex", "Family Income", "Weapon Carry", "Network Delinquency", "Popularity", "Centrality", "Density", "Interaction Term", "Intercept")
 
 names <- c("Age", "Sex", "Family Income", "Weapon Carry", "Network Delinquency", "Popularity", "Centrality", "Density", "Intercept")
@@ -239,20 +249,22 @@ t5 <- cbind(x, y, z)
 
 table4 <- kable(t4, caption = "Logistic Regression Model", "latex", booktabs = T) %>%
   add_header_above(c("Predictors", "Model 1" = 1)) %>%
-  kable_styling("striped")
+  kable_styling("striped") %>%
+  footnote(general = "N = 3145")
 
 table5 <- kable(t5, caption = "Interaction Models", "latex", booktabs = T) %>%
   add_header_above(c("Predictors", "Model 2" = 1, "Model 3" = 1, "Model 4" = 1)) %>%
-  kable_styling("striped")
+  kable_styling("striped") %>%
+  footnote(general = "N = 3145")
 ```
 
 ```{r Descriptives, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-race.plot <- mydata %>%
+race.plot <- mydata.c %>%
   filter(race != is.na(race)) %>%
   ggplot(aes(x = race, fill = race)) +
   geom_bar() + guides(fill = F) + 
   coord_flip() +
-  labs(title = "Racial Composition of Respondents", y = "Counts") +
+  labs(title = "Racial Composition of Respondents", y = "Counts", x = " ") +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
@@ -264,7 +276,7 @@ race.victim <- mydata.c %>%
   geom_bar(aes(fill = as.character(victim)), position = "fill") + guides(fill = F) + 
   geom_hline(yintercept=(mean(mydata.c$victim)), linetype = "dashed", color = "red3") +
   coord_flip() +
-  labs(title = "Victimization by Race", y = "Proportion of Victims") +
+  labs(title = "Victimization by Race", y = "Proportion of Victims", x = " ") +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
@@ -328,7 +340,7 @@ table3 <- kable(t3, caption = "Descriptive Statistics","latex", booktabs = T) %>
   footnote(general = "N = 3145")
 ```
 
-```{r Visiualize imodel1, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r Figure 1, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 #New data frame with variables held constant - Interaction terms held at quantiles
 age <- mean(mydata.c$age)
 female <- mean(mydata.c$female)
@@ -339,8 +351,11 @@ popularity <- mean(mydata.c$popularity)
 centrality <- quantile(mydata.c$centrality, c(.1, .5, .9))
 density <- mean(mydata.c$density)
 
+
 predictions <- as.tibble(expand.grid(age, female, family.income, weapon.carry, network.delinquency, popularity, centrality, density))   
 colnames(predictions) <- c("age", "female", "family.income", "weapon.carry", "network.delinquency", "popularity", "centrality", "density")      
+
+
 #inv_logit_scaled() logistic() for BRMS models that you should probably try to run. 
 
 #Predicted Likelihood of Victimization added to the newdata 
@@ -360,14 +375,14 @@ samples <- samples %>%
 
 plot1 <- ggplot(samples, aes(x = network.delinquency , group = Centrality)) +
   geom_line(aes(y = victim, color = Centrality), size = 1.5) +
-  labs(title = "Interacting Centrality & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization") +
+  labs(title = "The Conditional Effects of Network Structure and Form on Victimization", subtitle = "The Interaction Effect of Centrality & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization", caption = "Figure 2") +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
-  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5))
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5))
 ```
 
-```{r Visualize imodel2, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r Figure 2, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 #New data frame with variables held constant - Interaction terms held at quantiles
 age <- mean(mydata.c$age)
 female <- mean(mydata.c$female)
@@ -399,14 +414,14 @@ samples$Popularity <- as.factor(samples$Popularity)
 
 plot2 <- ggplot(samples, aes(x = network.delinquency , group = Popularity)) +
   geom_line(aes(y = victim, color = Popularity) , size = 1.5) +
-  labs(title = "Interacting Popularity & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization") +
+  labs(title = "The Conditional Effects of Network Structure and Form on Victimization", subtitle = "The Interaction Effect of Popularity & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization", caption = "Figure 3") +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
-  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5))
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5))
 ```
 
-```{r Visualize imodel3, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r Figure 3, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 #New data frame with variables held constant - Interaction terms held at quantiles
 age <- mean(mydata.c$age)
 female <- mean(mydata.c$female)
@@ -431,48 +446,51 @@ samples$density <- as.character(samples$density)
 
 samples <- samples %>%
   mutate(Density = case_when(
-    density == "0.1571428571429" ~ "10th Percentile",
-    density == "0.2619047619048" ~ "50th Percentile",
-    density == "0.5"  ~ "90th Percentile",
+    density == "15.71428571429" ~ "10th Percentile",
+    density == "26.19047619048" ~ "50th Percentile",
+    density == "50"  ~ "90th Percentile",
     T ~ NA_character_))
 
 plot3 <- ggplot(samples, aes(x = network.delinquency , group = Density)) +
   geom_line(aes(y = victim, color = Density) , size = 1.5) +
-  labs(title = "Interacting Density & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization") +
+  labs(title = "The Conditional Effects of Network Structure and Form on Victimization", subtitle = "The Interaction Effect of Density & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization", caption = "Figure 4") +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
-  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5))
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5),  plot.subtitle = element_text(hjust = 0.5))
 ```
 
 ##Introduction
-The formative years in the lives of many American teenagers take place within the context of public or private school systems. In these contexts, teens are consistently exposed to many opportunities to practice forming and maintaining social relationships. One potential outcome of adolescent social relations is the risk of engaging with delinquency and violence, especially when teens are unsupervised (Haynie & Osgood 2005). Adolescents remain at increased risk for victimization when compared to other age groups. In 1997, 202, 000 students were victims of nonfatal serious violent crimes at school, including rape, sexual assault, robbery, and aggravated assault. When adding simple assault to the above, a total of 1.1 million students were classified as being victimized in school (Van Dorn 2004). In fact, in the United States youth are more than 2.3 times more likely than the general population to be victims (Hanish and Guerra 2000). Important for this study are instances of serious nonfatal forms of victimization and their relationship to the content or behavioral norms of the network and the structural characteristics of the respondent’s position within their friendship network. School-based risk factors for victimization have been studied extensively since data was collected for the 1977 Safe School Study conducted by the National Institute of Education (Van Dorn 2004). Some often-identified correlates of victimization are age and gender, which repeatedly show that younger adolescents and males are at the greatest risk of physical victimization (Warr, 1993). The prevalence, severity, and impacts of this problem have prompted increasing attention in recent years by national and international researchers who are committed to providing youth with safer schools (Hanish and Guerra 2000). However, Van Dorn (2004) found that school-based safety precautions did not significantly reduce violent victimization and only showed a trend toward significance with nonviolent victimization, suggesting that our schools have much to improve regarding policies geared towards preventing teens from engaging in violence on campus. Sociological research on adolescent crime and delinquency suggests that the social characteristics of an adolescent’s community heavily influence the likelihood of that teen’s involvement in delinquent behavior and perhaps the likelihood of their victimization (Hanish and Guerra 2000; Schreck, Fisher, and Miller 2004; Mouttapa, Valente, Gallaher, Rohrbach and Unger 2004; Sampson 1984; Moody 2001; Berg, Brunson, and Stewart 2012; Sampson and Groves 1989; Pridemore 2002; Evans and Smokoski 2016; Shaw and Mckay ([1942] 1969); Hirschi 1969; Sutherland and Cressey 1974). Schreck et al. (2004) speculate that research on victimization could benefit from studies emphasizing the peer influences generated by delinquent groups, because delinquency and victimization share many empirical connections. Their study identified peer delinquency as a significant risk factor for violent victimization. Additionally, Hirschi’s (1969) theory of social control and Sutherland’s (1974) theory of differential association have both empirically verified a connection between social networks and delinquency/crime and have been adapted and replicated by modern sociologists such as Haynie (2001), Matsueda (1982), and Mangino (2009). For example, Haynie (2001) shows that any structural network location that puts one in a position of greater influence within the group amplifies an individual’s delinquency above the delinquent content of the peer network. Just as there is a relationship between network position and delinquency, it follows, that there is a likely connection between the social network occupied by an adolescent and his/her chances of becoming a victim. However, the likelihood of victimization compared to the propensity towards delinquency may function differently in terms of causal mechanisms, particularly the mediating effects of the network’s structure. I posit that network structure influences how an individual may learn appropriate behavior and that the specific behaviors they adopt will either enhance or limit their exposure to violence. 
+The formative years in the lives of many American teenagers take place within the context of public or private school systems. In these contexts, teens are consistently exposed to many opportunities to practice forming and maintaining social relationships. One potential outcome of adolescent social relations is the risk of engaging with delinquency and violence, especially when teens are unsupervised (Haynie & Osgood 2005). In fact, in the United States youth are more than 2.3 times more likely than the general population to be victims (Hanish and Guerra 2000). School-based risk factors for victimization have been studied extensively since data was collected for the 1977 Safe School Study conducted by the National Institute of Education (Van Dorn 2004). Some often-identified correlates of victimization are age, gender, and race which repeatedly show that younger adolescents, males, and people of color are at the greatest risk of physical victimization (Warr, 1993). Sociological research on adolescent crime and delinquency suggests that the social characteristics of an adolescent’s community heavily influence the likelihood of that teen’s involvement in delinquent behavior and perhaps the likelihood of their victimization (Hanish and Guerra 2000; Schreck, Fisher, and Miller 2004; Mouttapa, Valente, Gallaher, Rohrbach and Unger 2004; Sampson 1984; Moody 2001; Berg, Brunson, and Stewart 2012; Sampson and Groves 1989; Pridemore 2002; Evans and Smokoski 2016; Shaw and Mckay ([1942] 1969); Hirschi 1969; Sutherland and Cressey 1974). Schreck et al. (2004) speculate that research on victimization could benefit from studies emphasizing the peer influences generated by delinquent groups, because delinquency and victimization share many empirical connections. Their study identified peer delinquency as a significant risk factor for violent victimization. Additionally, Hirschi’s (1969) theory of social control and Sutherland’s (1974) theory of differential association have both empirically verified a connection between social networks and delinquency/crime and have been adapted and replicated by modern sociologists such as Haynie (2001), Matsueda (1982), and Mangino (2009). For example, Haynie (2001) shows that any structural network location that puts one in a position of greater influence within the group amplifies an individual’s delinquency above the delinquent content of the peer network. Just as there is a relationship between network position and delinquency, it follows, that there is a likely connection between the social network occupied by an adolescent and his/her chances of becoming a victim. However, the likelihood of victimization compared to the propensity towards delinquency may function differently in terms of causal mechanisms, particularly the mediating effects of the network’s structure. I posit that adolescent friendship networks influence how individuals learn behaviors and that the specific behaviors they adopt will either enhance or limit their exposure to violence. Important for this study are instances of serious nonfatal forms of victimization and their relationship to the behavioral norms of the network and whether the influence of these norms on victimization are conditioned by the structural positioning of adolescents within their friendship networks.
 
 ##Data
 
 *Add Health*
 
-To test a friendship network’s influence on violent victimization, this study employs the public use  data from the first wave of the National Longitudinal Study of Adolescent to Adult Health (Add Health ). The data consists of a nationally representative sample of teens, grades 7 – 12, nested in randomly selected public and private schools throughout the United States in 1994-95. Information on the sample was collected from the respondents, their peers, school administrators, parents, siblings, and romantic partners through an initial in-school survey followed by four in-home interviews. 
+To test the influence of friendship network content and structure on teen's exposure to violent victimization, this study employs the public use  data from the first wave of the National Longitudinal Study of Adolescent to Adult Health (Here after Add Health). The data consists of a nationally representative sample of teens, grades 7 – 12, nested in randomly selected public and private schools throughout the United States in 1994-95. Information on the sample was collected from the respondents, their peers, school administrators, parents, siblings, and romantic partners through an initial in-school survey followed by four in-home interviews. 
 
 *In-School Surveys*
 
-Add Health’s In-School Questionnaire, a self-administered instrument, was distributed to more than 90,000 students in grades 7 through 12 in an hour-long class period between fall 1994 and spring 1995. The questionnaire consisted of many topics, from education and parental occupation to self-esteem and risk behaviors, but most important to this study was the information collected on student’s behaviors and friendships. Respondents were asked to name their five closest female friends and their five closest male friends. In instances where the friendship nominations were members of the same school as the respondent, as more than 80 percent of nominations were, data was also available on them. This study design enables the construction of varaibles that measure friendship network characteristics. Because Add Health project staff assigned an identification number to each student and recorded these nominations by each student’s registered ID it is possible to reconstruct the social networks for most students. This network information makes it possible to calculate behavioral attributes present in each respondent’s own friendship (ego) network, such as delinquency, as well as test the structural influences the network may have on behavior or propensity to victimization. 
+Add Health’s In-School Questionnaire, a self-administered instrument, was distributed to more than 90,000 students in grades 7 through 12 in an hour-long class period between fall 1994 and spring 1995. The questionnaire consisted of many topics, from education and parental occupation to self-esteem and risk behaviors, but most important to this study was the information collected on student’s behaviors and friendships. Respondents were asked to name their five closest female friends and their five closest male friends. In instances where the friendship nominations were members of the same school as the respondent, as more than 80 percent of nominations were, data was also available on the nominees. The Add Health study design makes it possible to reconstruct the social networks of most students. This network information enables researchers to calculate behavioral attributes present in each respondent’s own friendship network, such as delinquency, as well as test the structural influences the network may have on behavior or propensity to victimization. 
 
 *In-Home Interviews*
 
-Data from the more in-depth in-home interviews contains sensitive information on the adolescents such as experience with drugs and alcohol and various other risky behaviors such as carrying a weapon. One of the most advantageous components of this in-home method was the use of laptop computers which played prerecorded questions about experiences with victimization. This method of data collection helped to maintain confidentiality on numerous sensitive subjects. These self-reported experiences from the first wave of in-home interviews was used to construct the dependent variable – victim – for this study. Therefore, the research sample for this project comes from the in-home wave 1 respondents with the network data from the in-school survey data as an addition to the sample. The final research sample for the study consisted of 3145 observations.
+Data from the more in-depth in-home interviews contains sensitive information on the adolescents such as experience with drugs and alcohol and various other risky behaviors such as carrying a weapon. One of the most advantageous components of this in-home method was the use of laptop computers which played prerecorded questions about experiences with victimization. This method of data collection helped to maintain confidentiality on numerous sensitive subjects. These self-reported experiences from the first wave of in-home interviews was used to construct the dependent variable – victim – for this study. The final research sample for the study consisted of 3145 respondents with data from both the in-school and in-home interviews. 
 
 
 ##Variable Construction
 
 *The Dependent Variable: Violent Victimization*
 
-The variable victim is a composite indicator of victimization experienced in the twelve months prior to the wave 1 in-home interviews. It takes on the value of 0, if the respondent experienced none of the forms of physical victimization listed in Table 2, or 1 if they have experienced one of the forms  at least once in the past year. The variable was designed to measure purely physical manifestations of victimization i.e. being shot, stabbed or jumped. Table 1 shows that the victimization variable has a mean of 0.201 and a standard deviation of .401 for the research sample. About 20% of the sample has experienced one of these forms of violence. 
+The variable victim is a composite indicator of victimization experienced in the twelve months prior to the wave 1 in-home interviews. It takes on the value of 0, if the respondent experienced none of the forms of physical victimization listed in Table 1, or 1 if they have experienced one of the forms  at least once in the past year. The variable was designed to measure purely physical manifestations of victimization i.e. being shot, stabbed, jumped, or having a knife or gun pulled on you. Table 2 shows that the victimization variable has a mean of 0.201 and a standard deviation of .401 for the research sample. About 20% of the sample has experienced one of these forms of violence. 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 table1
 ```
 
+*Basic Controls* 
+
+The age of the respondent at the time of the interview, biological sex, and family's annual income are he basic control variables used in the analysis. Literature on victimization claims that younger teens and males have higher risk for victimization. Family income is included in the model to weakly control for the potential influences of socioeconomic status on exposure to violence. 
 
 *Popularity, Centrality, and Standing out*
 
@@ -480,12 +498,11 @@ Being a highly visible member, that is standing out, in a delinquent network is 
 
 *Density and Blending In*
 
-The concept of blending in is operationalized by the variable density. A highly dense network is marked by uniformity and a lack of individuality (Bearman, 1991). When there is less individuality, each member stands out less or, in other words, they blend in more. High density should function to provide a protective shell when coupled with higher rates of peer delinquency. The variable is defined as the number of ties in the adolescent’s friendship network divided by the total number of possible ties. The variable is represented in the research sample as a proportion and ranges from 0 to 1. The mean for the sample is 0.29 with a standard deviation of 0.152. 
-
+The concept of blending in is operationalized by the variable density. A highly dense network is marked by uniformity and a lack of individuality (Bearman, 1991). When there is less individuality, each member stands out less or, in other words, they blend in more. The variable is defined as the number of ties in the adolescent’s friendship network divided by the total number of possible ties, and is represented in the research sample as a proportion and ranging from 0 to 1. The mean for the sample is 0.29 with a standard deviation of 0.152. 
 
 *Weapon Carrying* 
 
-The variable weapon carry is a binary indicator for carrying a knife, club, or gun on school grounds in the thirty days prior to the wave 1 in-home interviews. It takes on the value of 0, if the respondent has not carried any of these weapons or 1 if they have. Table 1 shows that the victimization variable has a mean of 0.058 and a standard deviation of 0.235 for the research sample. About 6% of the sample had carried a weapon to school in the month prior to the in home surveys. 
+The variable weapon carry is a binary indicator for carrying a knife, club, or gun on school grounds in the thirty days prior to the wave 1 in-home interviews. It takes on the value of 0, if the respondent has not carried any of these weapons or 1 if they have. Table 2 shows that the weapon carry variable has a mean of 0.058 and a standard deviation of 0.235 for the research sample. About 6% of the sample had carried a weapon to school in the month prior to the in home surveys. 
 
 
 *Network Delinquency*
@@ -500,51 +517,53 @@ table2
 table3
 ```
 
-##Analytic Strategy Rigorously graded, why you chose models, why these priors. 
+##Analytic Strategy
 
-The dependent variable for this paper is dichotomous and therefore, the normal assumptions of ordinary least squared regression cannot be maintained. To compensate, logistic regression analysis, designed to handle dependent variables of this nature, was used to analyze the data. The logistic regression analysis for this project interprets the odds ratios for the independent variables that represent the individual variable’s influence on the likelihood of victimization while holding all other variables in the equation constant. An odds ratio of 1.5 can be understood as a 50% increase in the likelihood of violent victimization for the given variable net of the other variables present in the equation. On the other hand, an odds ratio of .5 signifies a 50% decrease in the likelihood of violent victimization for the variable in question while controlling for all other variables present in the model. The statistical method used in this paper anticipates victimization as the data used to construct the primary independent variables were collected in the first in-school survey while the data used to construct the variable victimization come from the in-home interviews conducted approximately a year after the first wave of in-school surveys were administered. The statistical method used in this paper anticipates victimization as the data used to construct the primary independent variables were collected in the first in-school survey while the data used to construct the variable victimization come from the in-home interviews conducted approximately a year after the first wave of in-school surveys were administered.  
+The dependent variable for this paper is dichotomous and therefore, the normal assumptions of ordinary least squared regression cannot be maintained. To compensate, logistic regression analysis, designed to handle dependent variables of this nature, is used to analyze the data. The logistic regression analysis for this project interprets the odds ratios for the independent variables that represent the individual variable’s influence on the likelihood of victimization while holding all other variables in the equation constant at their means. The statistical method used in this paper anticipates victimization as the data used to construct the primary independent variables were collected in the first in-school survey while the data used to construct the variable victimization come from the in-home interviews conducted approximately a year after the first wave of in-school surveys were administered.
+
+The priors used in the analysis were chosen for their lack of informativeness. They are very gently regularizing, but will be overwhelmed by even moderate evidence.
+
+To understand the combined effect of network structure and content on victimization interaction terms where added to the logistic regression models and plotted. 
+
+Race is omitted from the regression in favor a descriptive analysis. [white logic white methods] (Bonilla-Silva & Zuberi 2008)
 
 ##Results
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-grid.arrange(race.plot, race.victim, nrow = 2)
+grid.arrange(race.plot, race.victim, nrow = 2, bottom = textGrob("Figure 1", x = .9, y = .5, gp = gpar(fontsize = 8)))
 ```
 
-Research suggests that race is a robust determinant of victimization. Van Dorn (2004) states that there are a substantial number of high school students who reported seeing or hearing about racially or religiously motivated confrontations. In fact, 75% of all high school students reported seeing these incidences on a regular basis. What’s more, a study by the National School Boards Association (1993) reported that almost 30% of all school violence was related to race and ethnicity (Van Dorn 2004). Hindelang, Gottfredson, and Garofalo (1978) suggest that demographic characteristics (age, gender, income, etc.) are associated with various role expectations, which, in turn, lead to difference in lifestyles, exposure to risk, and subsequently to difference in the likelihood of victimization (Miethe, Stafford, and Long 1987; Haggerty, Skinner, McGlynn-Wright, Catalano, and Crutchfield 2013). Hindelang et al. (1978) report that higher victimization rates for males, the young, low-income persons, and racial/ethnic minorities are consistent with the lifestyle theory because these groups have higher exposure to the risks factors of victimization (Miethe et al. 1987).  Studies of violent victimization among youth have consistently shown that individuals of color, particularly African Americans, are at elevated risk (Hanish and Guerra 2000; Haggerty et al. 2013). 
+Research suggests that race is a robust determinant of victimization. Van Dorn (2004) states that there are a substantial number of high school students who reported seeing or hearing about racially or religiously motivated confrontations. In fact, 75% of all high school students reported seeing these incidences on a regular basis. What’s more, a study by the National School Boards Association (1993) reported that almost 30% of all school violence was related to race and ethnicity (Van Dorn 2004). Hindelang, Gottfredson, and Garofalo (1978) suggest that demographic characteristics (age, gender, income, etc.) are associated with various role expectations, which, in turn, lead to difference in lifestyles, exposure to risk, and subsequently to difference in the likelihood of victimization (Miethe, Stafford, and Long 1987; Haggerty, Skinner, McGlynn-Wright, Catalano, and Crutchfield 2013). Studies of violent victimization among youth have consistently shown that individuals of color, particularly African Americans, are at elevated risk (Hanish and Guerra 2000; Haggerty et al. 2013). Figure 1 shows the racial composition of the complete sample as well as rates of victimization by race. My results show that victimization disproportionally affects people of color particularly native americans. Asian and White adolescents are the only racial categories victimizaed at a lower rate than the sample mean, denoted by the dashed red line. 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 table4
 ```
 
-Model 1 from Table 5 predicts the respondent’s likelihood of victimization while holding the basic control variables of age, sex, race, and income constant in addition to the respondent’s own level of aggression. The entire model was significant at the 99% confidence level with a pseudo R2 of .2210. The primary control variable for this study is the individual respondent’s score on the aggressiveness index. Notably, while accounting for the other standard controls in the equation the respondent’s individual level of aggressiveness is a powerful predictor of victimization as a one-unit increase in aggression results in a 938% increase in the likelihood of violent victimization. This result is significant at the .01 level. Regarding the other basic controls, as students age one year their chance of victimization increases by 9%, net of the other variables. Though the literature claims that younger children and males are at greater risk of victimization, as mentioned above, victimization as I have defined it only includes serious nonfatal forms of physical violence. As Model 1 shows, younger children are actually safer than their older counterparts in terms of violence. Also, while considering the included variables, females are 57% less likely than males to be victims of violence, which follows the literature. Black students are 59% more likely than white students to suffer from violence. The remaining racial categories are not different from white. The family’s income also influences victimization. Net of the included variables, every thousand dollar increase in the respondent’s family annual income results in a 1% decrease in the likelihood of victimization.
-Model 2 from Table 5 incorporates the key network content variables for the sample, racial heterogeneity and the ego network’s average delinquency. As a group, these two variables statistically improved the Model’s pseudo R2 to .2271. (P. <.0001). Consistent with the role expectation hypothesis suggested by Sutherland and Cressey (1974) and Miethe et al. (1987), a 1% increase in the racial heterogeneity of the ego network results in a 1% increase in the likelihood of victimization, while holding all other variables constant. For network delinquency, a one unit increase in friends’ delinquency results in a 16% increase in the likelihood of ego’s victimization. This result is significant at the .10 level. In Model 2 we also see that the racial category Asian becomes significant, meaning that Asians are 60% less likely than whites to become victims of violence. Interestingly in Model 2, with the introduction of network delinquency and racial heterogeneity, we see that the odds ratios for aggressiveness fall from 9.38 to 8.89; slight in the grand scheme of the project but noteworthy for several reasons more prominent in Model 3. Similarly, from Model 1 to Model 2, the coefficient for black has declined slightly, meaning that some of the variance of the variable victimization that is associated with being black, and separately, having high aggression, is explained by the network content variables. 
-	The third model from Table 5 adds the network form variables Friend Involvement, Popularity, Centrality and Density. As a block, these structural network variables contributed to improving the pseudo R2, which is now .2323. The change from Model 2 to Model 3 was significant at P<.01. These structural network variables changed the Model in a few significant ways. First, network delinquency is no longer significant. This means that these network form variables explain, at least in part, how the influence of the network takes place. That is, one’s position inside their network mediates the effect of the content (norms) of the network. Second, continuing the pattern seen in Model 2, as we introduce network delinquency in tandem with the network form variables, we see a decline in the OR of aggressiveness, meaning they are significantly interrelated. The position an adolescent occupies within his/her own social network also mediates some of the effect of one’s own aggression on being a victim. The same can be said for the variable Black. As we introduce network characteristics and structural components the odds ratio for the variable black decreases. Some of the effects of race on victimization are mediated by network content and form for black respondents. 
-	Now to Model 3’s network form variables themselves. The more central a person is in their network the less likely they are to experience violent victimization; as centrality increases by one unit the likelihood of victimization decreases by 25%, while controlling for the other independent variables. This result is mediated when the network content interacts with the networks form. Conversely, as the density of the friendship network increases by 1% the likelihood of victimization decreases by 1%. In this Model, popularity is not statistically significant nor is friend involvement. 
+Regarding the other basic controls, as students age one year their chance of victimization increases by 9%, net of the other variables. Though the literature claims that younger children and males are at greater risk of victimization, as mentioned above, victimization as I have defined it only includes serious nonfatal forms of physical violence. As Model 1 shows, younger children are actually safer than their older counterparts in terms of violence. Also, while considering the included variables, females are 57% less likely than males to be victims of violence, which follows the literature. The family’s income also influences victimization. Net of the included variables, every thousand dollar increase in the respondent’s family annual income results in a 1% decrease in the likelihood of victimization. For network delinquency, a one unit increase in friends’ delinquency results in a 16% increase in the likelihood of ego’s victimization. The more central a person is in their network the less likely they are to experience violent victimization; as centrality increases by one unit the likelihood of victimization decreases by 25%, while controlling for the other independent variables. Conversely, as the density of the friendship network increases by 1% the likelihood of victimization decreases by 1%.
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 table5
 ```
 
+Models 2, 3, and 4 examine the relationship between the respondent’s friendship network delinquency and their victimization and whether it is conditioned by their structural position is within the network. To test this effect, the Models include the cross-product of network structural variables and average network delinquency. In order to interpret the interaction effect of structure and delinquency on victimization I broke up the structural variables in to three categories, high, middle, and low defined by their 10th, 50th, and 90th percentile values respectively. Next, I plotted the predicted probability of victimizartion across the range of network delinquency scores while holding all other included variables at their means, as shown in FIgures 2, 3, and 4. Predicted probabilities were calulated with the inverse link function to convert the original estimates from log odds to probabilities. The interaction effects are now plain to see. 
+
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 plot1
 ```
 
-Model 4 examines the relationship between the respondent’s network delinquency score and their victimization and whether it is conditioned by how central the respondent’s own position is within the network. Thus, the Model includes the cross-product of centrality and network delinquency. This cross-product term is statistically significant at the .05 level. To understand this interaction, it is necessary to solve the logistic regression equation. To do so, I created “high” and “low” categories for both centrality and network delinquency. High centrality is defined as the mean value for centrality plus two standard deviations and low centrality is the mean minus one standard deviation as minus two standard deviations is outside of the real range of the observed data. The “high” and “low” values for network delinquency are defined in the same way, with the high category being plus two standard deviations above the mean and the low category being one standard deviation below. Using these values, the predicted probabilities of victimization were calculated while holding all other variables at their means to predict the likelihood of victimization. The predicted probabilities of victimization using these values are displayed in Figure 1, and the interaction is plainly seen.
-When analyzing respondents who are embedded in highly delinquent networks, the support for the adverse effects of “standing out” become apparent. Given the delinquent network, individuals with high centrality are more likely to become a victim than their low centrality counter parts. That is, standing out in a delinquent network increases one’s risk of violent victimization. Figure 1 shows that those adolescents who have high centrality within a highly delinquent network have a 21.1% chance of victimization, while those who occupy less prominent positions within equally delinquent networks have a 16.18% likelihood of victimization. In networks with low delinquency the effects reverse. For respondents whose friendship networks have lower levels of delinquency and who occupy a more central position, the ego’s risk of victimization decreases.. When the ratio of definitions is unfavorable to committing delinquent acts, then the normalized social practices of the peer group pull the adolescent further away from situations in which engaging in violence is possible. Figure 1 illustrates this phenomena, as adolescents with high centrality and who occupy non-delinquent networks only have a 6.74% likelihood of becoming victims of violence. 
- To summarize, high centrality “amplifies” the effect of the network’s delinquent content on the teens risk of violent victimization. In other words, one does not want to be central in a highly delinquent network, which supports the original hypothesis for adolescents who stand out in highly delinquent networks. 
+
+When analyzing respondents who are embedded in highly delinquent networks, the support for the adverse effects of “standing out” become apparent. Given the delinquent network, individuals with high centrality are more likely to become a victim than their low centrality counter parts. That is, standing out in a delinquent network increases one’s risk of violent victimization. Figure 1 shows that those adolescents who have high centrality within a highly delinquent network have over an 80% chance of victimization, while those who occupy less prominent positions within equally delinquent networks have much lower likelihoods of victimization. In networks with low delinquency the effects reverse. For respondents whose friendship networks have lower levels of delinquency and who occupy a more central position, the ego’s risk of victimization decreases. When the ratio of definitions in an adolescent's friendship network is unfavorable to committing delinquent acts, then the normative social practices of the peer group pull the adolescent further away from situations in which engaging in violence is possible. Figure 1 illustrates this phenomena, as adolescents with high centrality and who occupy non-delinquent networks have less than a 10% chance of becoming victims of violence. To summarize, high centrality “amplifies” the effect of the network’s delinquent content on the teens risk of violent victimization. In other words, one does not want to be central in a highly delinquent network. 
 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 plot2
 ```
 
-Model 5 inspects the relationship between network delinquency and popularity and their interacting effects on victimization. Identically to the categories for centrality from Model 4, popularity was made into high and low categories using the variable’s mean plus two standard deviations for the high category and minus one for the low. Again, minus two standard deviations remains outside of the real range of the data. The same values for high and low network delinquency are repeated from Model 4. Figure 2 shows the statistically significant interaction by solving the regression equation for these values, and the interaction is apparent and similar to those seen with centrality. Popularity amplifies the effect of network delinquency on victimization. Increasing popularity while in highly delinquent networks increases victimization, again supporting the standing out hypothesis. Adolescents who received a greater number of friendship nominations and exist in a highly delinquent network are predicted to have a 29.95% chance of victimization. Conversely, those adolescents who received more friendship nominations and who occupied a network with lower levels of delinquency saw the effect reverse; they reported the lowest levels of victimization at a 6.74% likelihood. This is again in line with differential association theory as influential members of a non-delinquent network are unlikely to find themselves in situations where the risk of violence is high. 
-Figures 1 and 2 show that centrality and popularity exhibit similar effects on victimization when interacting with network delinquency. Both interaction effects show support for the hypothesis that standing out in a delinquent network increases the odds of becoming a victim.
+Model 3 inspects the relationship between network delinquency and popularity and their interaction effect on victimization. Nearly identical to the pattern obersved in Figure 2 popularity amplifies the effect of network delinquency on victimization. Increasing popularity while in highly delinquent networks increases victimization. Adolescents who received a greater number of friendship nominations and exist in a highly delinquent network are predicted to have over an 80% chance of victimization. Conversely, those adolescents who received more friendship nominations and who occupied a network with lower levels of delinquency saw the effect reverse; they reported the lowest levels of victimization in the figure at about a 5% chance. Figures 1 and 2 show that centrality and popularity exhibit similar effects on victimization when interacting with network delinquency. Both interaction effects show support for the hypothesis that standing out in a delinquent network increases the odds of becoming a victim.
 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 plot3
 ```
 
-Model 6 tests the “blending in” hypothesis. It explores the interaction effects of the ego network’s density score and the average delinquency of the respondent’s closest friends on violent victimization. This interaction term is statistically significant. Again, to understand the interaction, the equation must be solved. High and low network delinquency are defined identically to Models 4 and 5; and again, high and low categories for the variable density were calculated using the variable’s mean plus two standard deviations for the high category and minus one for the low. The predicted probabilities are presented in Figure 3 while holding all control variables at their means. Here the interaction effect differs from those seen using centrality and popularity. 
-As Figure 3 shows, in a high delinquency network, increasing density reduces the likelihood of victimization. Adolescents who occupy a highly delinquent network and have higher density scores are predicted to only have an 8.53% chance of being victimized while members of the same delinquent network with lower density have a 22.06% chance. This is the protective shell created by blending in, supporting the original hypothesis. Taking the interaction in Figure 3 to its conclusion, in a low delinquency network blending in has less of an effect on an adolescent’s propensity to be victimized. Higher density in social networks where the ratio for definitions favor non-delinquent behavior has little effect on the ego’s changes of becoming a victim meaning that density does not function to amplify the effects of the network’s delinquent content as centrality and popularity do. Instead, the variable density functions to conceal members of delinquent groups and protect them from violence. 
+Model 4 tests the “blending in” hypothesis. It explores the interaction effects of the respondent's network density score and the average delinquency of the respondent’s closest friends on violent victimization. As Figure 4 shows, in a high delinquency network, increasing density reduces the likelihood of victimization. Adolescents who occupy a highly delinquent network and have higher density scores are predicted to only have less than a 20% chance of being victimized while members of the same delinquent network with lower density have a above a 60% chance. The 90th percentile for density was 0.5 indicating that having half of all possible reciprocal ties in a delinquent network is enough to form a protective shell around an adolescent. Taking the interaction in Figure 3 to its conclusion, in a low delinquency network blending in has less of an effect on an adolescent’s propensity to be victimized. Higher density in social networks where the ratio for definitions favor non-delinquent behavior has little effect on the ego’s changes of becoming a victim meaning that density does not function to amplify the effects of the network’s delinquent content as centrality and popularity do. Instead, the variable density functions to conceal members of delinquent groups and protect them from violence. 

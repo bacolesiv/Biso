@@ -229,6 +229,12 @@ inames <- c("Age", "Sex", "Family Income", "Weapon Carry", "Network Delinquency"
 
 names <- c("Age", "Sex", "Family Income", "Weapon Carry", "Network Delinquency", "Popularity", "Centrality", "Density", "Intercept")
 
+t4 <- round(t4, digits = 3)
+x <- round(x, digits = 3)
+y <- round(y, digits = 3)
+z <- round(z, digits = 3)
+
+
 rownames(t4) <- names
 rownames(m1) <- inames 
 rownames(m2) <- inames 
@@ -248,12 +254,12 @@ table5 <- kable(t5, caption = "Interaction Models", "latex", booktabs = T) %>%
 
 ###Descriptive Statistics & Tables
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-race.plot <- mydata %>%
+race.plot <- mydata.c %>%
   filter(race != is.na(race)) %>%
   ggplot(aes(x = race, fill = race)) +
   geom_bar() + guides(fill = F) + 
   coord_flip() +
-  labs(title = "Racial Composition of Respondents", y = "Counts") +
+  labs(title = "Racial Composition of Respondents", y = "Counts", x = " ") +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
@@ -265,7 +271,7 @@ race.victim <- mydata.c %>%
   geom_bar(aes(fill = as.character(victim)), position = "fill") + guides(fill = F) + 
   geom_hline(yintercept=(mean(mydata.c$victim)), linetype = "dashed", color = "red3") +
   coord_flip() +
-  labs(title = "Victimization by Race", y = "Proportion of Victims") +
+  labs(title = "Victimization by Race", y = "Proportion of Victims", x = " ") +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
@@ -327,21 +333,6 @@ t3 <- round(cbind(Mean, Stdv, Min, Median, Max), digits=3)
 table3 <- kable(t3, caption = "Descriptive Statistics","latex", booktabs = T) %>%
   kable_styling(latex_options = "striped") %>%
   footnote(general = "N = 3145")
-
-table4 <- kable(t4, caption = "Logistic Regression Model","latex", booktabs = T) %>%
-  kable_styling(latex_options = "striped") %>%
-  footnote(general = "N = 3145")
-
-table5 <- kable(t5, caption = "Interaction Models", "latex", booktabs = T) %>%
-  kable_styling(latex_options = "striped") %>%
-  footnote(general = "N = 3145")
-
-table1
-table2
-table3
-table4
-table5
-grid.arrange(race.plot, race.victim, nrow = 2)
 ```
 
 ###Comparing the Models with Information Criteria
@@ -398,11 +389,11 @@ samples <- samples %>%
 
 plot1 <- ggplot(samples, aes(x = network.delinquency , group = Centrality)) +
   geom_line(aes(y = victim, color = Centrality), size = 1.5) +
-  labs(title = "Interacting Centrality & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization") +
+  labs(title = "The Conditional Effects of Network Structure and Form on Victimization", subtitle = "The Interaction Effects of Centrality & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization") +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
-  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5))
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5))
 ```
 
 ###Visualizing Popularity Model 
@@ -438,11 +429,11 @@ samples$Popularity <- as.factor(samples$Popularity)
 
 plot2 <- ggplot(samples, aes(x = network.delinquency , group = Popularity)) +
   geom_line(aes(y = victim, color = Popularity) , size = 1.5) +
-  labs(title = "Interacting Popularity & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization") +
+  labs(title = "The Conditional Effects of Network Structure and Form on Victimization", subtitle = "The Interaction Effects of Popularity & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization") +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
-  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5))
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5))
 ```
 
 ###Visualizing Density Model
@@ -478,11 +469,11 @@ samples <- samples %>%
 
 plot3 <- ggplot(samples, aes(x = network.delinquency , group = Density)) +
   geom_line(aes(y = victim, color = Density) , size = 1.5) +
-  labs(title = "Interacting Density & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization") +
+  labs(title = "The Conditional Effects of Network Structure and Form on Victimization", subtitle = "The Interaction Effects of Density & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization") +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
-  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5))
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5),  plot.subtitle = element_text(hjust = 0.5))
 ```
 
 
