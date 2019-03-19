@@ -379,7 +379,8 @@ plot1 <- ggplot(samples, aes(x = network.delinquency , group = Centrality)) +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
-  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5))
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5)) +
+  ggsave("plot1.pdf", width = 20, height = 15, units = "cm")
 ```
 
 ```{r Figure 2, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
@@ -418,7 +419,8 @@ plot2 <- ggplot(samples, aes(x = network.delinquency , group = Popularity)) +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
-  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5))
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5)) +
+  ggsave("plot2.pdf", width = 20, height = 15, units = "cm")
 ```
 
 ```{r Figure 3, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
@@ -457,7 +459,8 @@ plot3 <- ggplot(samples, aes(x = network.delinquency , group = Density)) +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
-  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5),  plot.subtitle = element_text(hjust = 0.5))
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5),  plot.subtitle = element_text(hjust = 0.5)) +
+  ggsave("plot3.pdf", width = 20, height = 15, units = "cm")
 ```
 
 ##Introduction
