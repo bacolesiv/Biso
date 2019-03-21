@@ -274,7 +274,7 @@ race.plot <- mydata.c %>%
 race.victim <- mydata.c %>%
   ggplot(aes(x = race)) +
   geom_bar(aes(fill = as.character(victim)), position = "fill") + guides(fill = F) + 
-  geom_hline(yintercept=(mean(mydata.c$victim)), linetype = "dashed", color = "red3") +
+  geom_hline(yintercept=(mean(mydata.c$victim)), linetype = "dashed", color = "red3") + #can use annotate() to label the mean line
   coord_flip() +
   labs(title = "Victimization by Race", y = "Proportion of Victims", x = " ") +
   scale_colour_pander() +
@@ -529,6 +529,8 @@ The priors used in the analysis were chosen for their lack of informativeness. T
 To understand the combined effect of network structure and content on victimization interaction terms where added to the logistic regression models and plotted. 
 
 Race is omitted from the regression in favor a descriptive analysis. [white logic white methods] (Bonilla-Silva & Zuberi 2008)
+
+If you have a substantive question that IC says doesnt help your fit you can still report the results as long as they are relevant to your question. IC will usually only tell you to include the interaction if there is a *strong* relationship present. You do need to discuss IC for the project. 
 
 ##Results
 
