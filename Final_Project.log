@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018) (preloaded format=pdflatex 2018.4.16)  10 APR 2019 11:12
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018) (preloaded format=pdflatex 2018.4.16)  10 APR 2019 16:29
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -769,39 +769,39 @@ e
 )) [1
 
 {/usr/local/texlive/2018/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
-LaTeX Font Info:    Try loading font information for OT1+lmr on input line 223.
+LaTeX Font Info:    Try loading font information for OT1+lmr on input line 214.
 
 (/usr/local/texlive/2018/texmf-dist/tex/latex/lm/ot1lmr.fd
 File: ot1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OML+lmm on input line 223.
+LaTeX Font Info:    Try loading font information for OML+lmm on input line 214.
 
 (/usr/local/texlive/2018/texmf-dist/tex/latex/lm/omllmm.fd
 File: omllmm.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 223
+LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 214
 .
 (/usr/local/texlive/2018/texmf-dist/tex/latex/lm/omslmsy.fd
 File: omslmsy.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMX+lmex on input line 223
+LaTeX Font Info:    Try loading font information for OMX+lmex on input line 214
 .
 (/usr/local/texlive/2018/texmf-dist/tex/latex/lm/omxlmex.fd
 File: omxlmex.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 223.
+(Font)              <10> on input line 214.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 223.
+(Font)              <7> on input line 214.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <5> on input line 223.
-LaTeX Font Info:    Try loading font information for U+msa on input line 223.
+(Font)              <5> on input line 214.
+LaTeX Font Info:    Try loading font information for U+msa on input line 214.
 (/usr/local/texlive/2018/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 ) (/usr/local/texlive/2018/texmf-dist/tex/latex/microtype/mt-msa.cfg
 File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 223.
+LaTeX Font Info:    Try loading font information for U+msb on input line 214.
 (/usr/local/texlive/2018/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ) (/usr/local/texlive/2018/texmf-dist/tex/latex/microtype/mt-msb.cfg
@@ -811,13 +811,13 @@ File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
 
 \AtBegShi@Output ...ipout \box \AtBeginShipoutBox 
                                                   \fi \fi 
-l.265 
+l.257 
       ] [3pdfTeX warning (ext4): destination with the same identifier (name{tab
 le.2}) has been already used, duplicate ignored
 
 \AtBegShi@Output ...ipout \box \AtBeginShipoutBox 
                                                   \fi \fi 
-l.366 
+l.357 
       ]
 <Final_Project_files/figure-latex/unnamed-chunk-4-1.pdf, id=45, 455.7025pt x 32
 3.2075pt>
@@ -825,14 +825,14 @@ File: Final_Project_files/figure-latex/unnamed-chunk-4-1.pdf Graphic file (type
  pdf)
 <use Final_Project_files/figure-latex/unnamed-chunk-4-1.pdf>
 Package pdftex.def Info: Final_Project_files/figure-latex/unnamed-chunk-4-1.pdf
-  used on input line 387.
+  used on input line 381.
 (pdftex.def)             Requested size: 455.70831pt x 323.21164pt.
 [4pdfTeX warning (ext4): destination with the same identifier (name{table.3}) h
 as been already used, duplicate ignored
 
 \AtBegShi@Output ...ipout \box \AtBeginShipoutBox 
                                                   \fi \fi 
-l.389 R
+l.383 R
        esearch suggests that race is a robust determinant of victimization.] [5
  <./Final_Project_files/figure-latex/unnamed-chunk-4-1.pdf>]
 <Final_Project_files/figure-latex/unnamed-chunk-7-1.pdf, id=68, 462.72874pt x 3
@@ -841,21 +841,21 @@ File: Final_Project_files/figure-latex/unnamed-chunk-7-1.pdf Graphic file (type
  pdf)
 <use Final_Project_files/figure-latex/unnamed-chunk-7-1.pdf>
 Package pdftex.def Info: Final_Project_files/figure-latex/unnamed-chunk-7-1.pdf
-  used on input line 503.
+  used on input line 498.
 (pdftex.def)             Requested size: 462.73466pt x 323.21164pt.
 [6pdfTeX warning (ext4): destination with the same identifier (name{table.4}) h
 as been already used, duplicate ignored
 
 \AtBegShi@Output ...ipout \box \AtBeginShipoutBox 
                                                   \fi \fi 
-l.505 W
+l.500 W
        hen analyzing respondents who are embedded in highly delinquentpdfTeX wa
 rning (ext4): destination with the same identifier (name{table.5}) has been alr
 eady used, duplicate ignored
 
 \AtBegShi@Output ...ipout \box \AtBeginShipoutBox 
                                                   \fi \fi 
-l.505 W
+l.500 W
        hen analyzing respondents who are embedded in highly delinquent]
 <Final_Project_files/figure-latex/unnamed-chunk-8-1.pdf, id=75, 462.72874pt x 3
 23.2075pt>
@@ -863,7 +863,7 @@ File: Final_Project_files/figure-latex/unnamed-chunk-8-1.pdf Graphic file (type
  pdf)
 <use Final_Project_files/figure-latex/unnamed-chunk-8-1.pdf>
 Package pdftex.def Info: Final_Project_files/figure-latex/unnamed-chunk-8-1.pdf
-  used on input line 528.
+  used on input line 523.
 (pdftex.def)             Requested size: 462.73466pt x 323.21164pt.
 [7 <./Final_Project_files/figure-latex/unnamed-chunk-7-1.pdf>]
 <Final_Project_files/figure-latex/unnamed-chunk-9-1.pdf, id=90, 462.72874pt x 3
@@ -872,28 +872,28 @@ File: Final_Project_files/figure-latex/unnamed-chunk-9-1.pdf Graphic file (type
  pdf)
 <use Final_Project_files/figure-latex/unnamed-chunk-9-1.pdf>
 Package pdftex.def Info: Final_Project_files/figure-latex/unnamed-chunk-9-1.pdf
-  used on input line 546.
+  used on input line 542.
 (pdftex.def)             Requested size: 462.73466pt x 323.21164pt.
 [8 <./Final_Project_files/figure-latex/unnamed-chunk-8-1.pdf>]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 569.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 565.
 [9 <./Final_Project_files/figure-latex/unnamed-chunk-9-1.pdf>]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 569.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 565.
 (./Final_Project.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 569.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 569.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 565.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 565.
 Package rerunfilecheck Info: File `Final_Project.out' has not changed.
 (rerunfilecheck)             Checksum: 4C6234BF603ECA566F2E6C2C6221B988;531.
 
 LaTeX Warning: There were multiply-defined labels.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 569.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 565.
  ) 
 Here is how much of TeX's memory you used:
- 13959 strings out of 492649
- 202895 string characters out of 6129622
+ 13957 strings out of 492649
+ 202873 string characters out of 6129622
  327613 words of memory out of 5000000
  17503 multiletter control sequences out of 15000+600000
- 56471 words of font info for 91 fonts, out of 8000000 for 9000
+ 56388 words of font info for 90 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  34i,11n,38p,238b,343s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/local/texlive/2018/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/lo
@@ -908,7 +908,7 @@ cal/texlive/2018/texmf-dist/fonts/type1/public/lm/lmr10.pfb></usr/local/texlive
 -dist/fonts/type1/public/lm/lmri10.pfb></usr/local/texlive/2018/texmf-dist/font
 s/type1/public/lm/lmri12.pfb></usr/local/texlive/2018/texmf-dist/fonts/type1/pu
 blic/lm/lmsy10.pfb>
-Output written on Final_Project.pdf (9 pages, 200983 bytes).
+Output written on Final_Project.pdf (9 pages, 200796 bytes).
 PDF statistics:
  160 PDF objects out of 1000 (max. 8388607)
  126 compressed objects within 2 object streams
