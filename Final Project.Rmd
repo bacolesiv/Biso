@@ -16,6 +16,7 @@ library(rethinking)
 library(kableExtra)
 library(ggthemes)
 library(knitr)
+library(broom)
 
 #Windows
 #load("E:/Repository/Biso/Biso/data/wave1.rda")
@@ -147,7 +148,7 @@ mydata.dv <- mydata %>%
   select(knife.gun, shot, stabbed, jumped)
 
 mydata <- mydata %>%
-  select(AID, victim, race, female, age, family.income, weapon.carry, network.delinquency, popularity, centrality, density)
+  select(AID, victim, race, female, age, family.income, weapon.carry, racial.heterogeneity, network.delinquency, popularity, centrality, density)
 
 #Only complete rows Kept
 mydata.c <- mydata[complete.cases(mydata), ]
@@ -156,7 +157,7 @@ mydata.c <- mydata[complete.cases(mydata), ]
 ```{r Models, message=FALSE, warning=FALSE, include=FALSE}
 model <- map(alist(
   victim ~ dbinom(1, p),
-  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*network.delinquency + b6*popularity + b7*centrality + b8*density,
+  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*racial.heterogeneity + b6*network.delinquency + b7*popularity + b8*centrality + b9*density,
   a ~ dnorm(0,10),
   b1 ~ dnorm(0,10),
   b2 ~ dnorm(0,10),
@@ -165,11 +166,12 @@ model <- map(alist(
   b5 ~ dnorm(0,10),
   b6 ~ dnorm(0,10), 
   b7 ~ dnorm(0,10), 
-  b8 ~ dnorm(0,10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0))
+  b8 ~ dnorm(0,10),
+  b9 ~ dnorm(0, 10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0))
 
 imodel1 <- map(alist(
   victim ~ dbinom(1, p),
-  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*network.delinquency + b6*popularity + b7*centrality + b8*density + b9*network.delinquency*centrality,
+  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*racial.heterogeneity + b6*network.delinquency + b7*popularity + b8*centrality + b9*density + b10*network.delinquency*centrality,
   a ~ dnorm(0,10),
   b1 ~ dnorm(0,10),
   b2 ~ dnorm(0,10),
@@ -179,11 +181,12 @@ imodel1 <- map(alist(
   b6 ~ dnorm(0,10), 
   b7 ~ dnorm(0,10), 
   b8 ~ dnorm(0,10), 
-  b9 ~ dnorm(0,10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0))
+  b9 ~ dnorm(0,10), 
+  b10 ~ dnorm(0, 10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0, b10=0))
 
 imodel2 <- map(alist(
   victim ~ dbinom(1, p),
-  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*network.delinquency + b6*popularity + b7*centrality + b8*density + b9*network.delinquency*popularity,
+  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*racial.heterogeneity + b6*network.delinquency + b7*popularity + b8*centrality + b9*density + b10*network.delinquency*popularity,
   a ~ dnorm(0,10),
   b1 ~ dnorm(0,10),
   b2 ~ dnorm(0,10),
@@ -193,11 +196,12 @@ imodel2 <- map(alist(
   b6 ~ dnorm(0,10), 
   b7 ~ dnorm(0,10), 
   b8 ~ dnorm(0,10), 
-  b9 ~ dnorm(0,10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0))
+  b9 ~ dnorm(0,10), 
+  b10 ~ dnorm(0,10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0, b10=0))
 
 imodel3 <- map(alist(
   victim ~ dbinom(1, p),
-  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*network.delinquency + b6*popularity + b7*centrality + b8*density + b9*network.delinquency*density,
+  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*racial.heterogeneity + b6*network.delinquency + b7*popularity + b8*centrality + b9*density + b10*network.delinquency*density,
   a ~ dnorm(0,10),
   b1 ~ dnorm(0,10),
   b2 ~ dnorm(0,10),
@@ -207,37 +211,75 @@ imodel3 <- map(alist(
   b6 ~ dnorm(0,10), 
   b7 ~ dnorm(0,10), 
   b8 ~ dnorm(0,10), 
-  b9 ~ dnorm(0,10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0))
+  b9 ~ dnorm(0,10), 
+  b10 ~ dnorm(0, 10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0, b10=0))
 
-m <- as.data.frame((model@coef),1)
-m1 <- as.data.frame((imodel1@coef),1)
-m2 <- as.data.frame((imodel2@coef),1)
-m3 <- as.data.frame((imodel3@coef),1)
+inames <- c("Age", "Sex", "Family Income", "Weapon Carry", "Racial Heterogeneity",  "Network Delinquency", "Popularity", "Centrality", "Density", "Interaction Term", "Intercept")
+
+names <- c("Age", "Sex", "Family Income", "Weapon Carry", "Racial Heterogeneity", "Network Delinquency", "Popularity", "Centrality", "Density", "Intercept")
+
+a <- as.data.frame((model@coef),1)
+a1 <- precis(model)@output
+low <- a1$`5.5%` 
+up <- a1$`94.5%`
+A <- cbind(low, up)
+
+b <- as.data.frame((imodel1@coef),1)
+b1 <- precis(imodel1)@output
+low <- b1$`5.5%` 
+up <- b1$`94.5%`
+B <- cbind(low, up)
+
+c  <- as.data.frame((imodel2@coef),1)
+c1 <- precis(imodel2)@output
+low <- c1$`5.5%` 
+up <- c1$`94.5%`
+C <- cbind(low, up)
+
+d <- as.data.frame((imodel3@coef),1)
+d1 <- precis(imodel3)@output
+low <- d1$`5.5%` 
+up <- d1$`94.5%`
+D <- cbind(low, up)
+
+
+
+m <- cbind(a, A)
+m1 <- cbind(b, B)
+m2 <- cbind(c, C)
+m3 <- cbind(d, D)
+
+
 
 t4 <- m %>%
-  mutate(OR = exp((model@coef))) %>%
-  select(OR)
+  mutate(OR = exp((model@coef)),
+         Lower = exp(low), 
+         Upper = exp(up)) %>%
+  select(OR, Lower, Upper)
 
 x <- m1 %>%
-  mutate(OR = exp((imodel1@coef))) %>%
-  select(OR)
+  mutate(OR = exp((imodel1@coef)),
+       Lower = exp(low), 
+         Upper = exp(up)) %>%
+  select(OR, Lower, Upper)
 
 y <- m2 %>%
-  mutate(OR = exp((imodel2@coef))) %>%
-  select(OR)
+  mutate(OR = exp((imodel2@coef)),
+         Lower = exp(low), 
+         Upper = exp(up)) %>%
+  select(OR, Lower, Upper)
 
 z <- m3 %>%
-  mutate(OR = exp((imodel3@coef)))%>%
-  select(OR)
+  mutate(OR = exp((imodel3@coef)),
+         Lower = exp(low), 
+         Upper = exp(up)) %>%
+  select(OR, Lower, Upper)
 
 t4 <- round(t4, digits = 3)
 x <- round(x, digits = 3)
 y <- round(y, digits = 3)
 z <- round(z, digits = 3)
 
-inames <- c("Age", "Sex", "Family Income", "Weapon Carry", "Network Delinquency", "Popularity", "Centrality", "Density", "Interaction Term", "Intercept")
-
-names <- c("Age", "Sex", "Family Income", "Weapon Carry", "Network Delinquency", "Popularity", "Centrality", "Density", "Intercept")
 
 rownames(t4) <- names
 rownames(x) <- inames 
@@ -248,12 +290,12 @@ rownames(z) <- inames
 t5 <- cbind(x, y, z)
 
 table4 <- kable(t4, caption = "Logistic Regression Model", "latex", booktabs = T) %>%
-  add_header_above(c("Predictors", "Model 1" = 1)) %>%
+  add_header_above(c("Predictors", "Model 1" = 3)) %>%
   kable_styling("striped") %>%
   footnote(general = "N = 3145")
 
 table5 <- kable(t5, caption = "Interaction Models", "latex", booktabs = T) %>%
-  add_header_above(c("Predictors", "Model 2" = 1, "Model 3" = 1, "Model 4" = 1)) %>%
+  add_header_above(c("Predictors", "Model 2" = 3, "Model 3" = 3, "Model 4" = 3)) %>%
   kable_styling("striped") %>%
   footnote(general = "N = 3145")
 ```
@@ -281,18 +323,6 @@ race.victim <- mydata.c %>%
   scale_fill_pander() +
   theme_pander() + 
   theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), legend.position = "none") 
-
-
-#Native American and Black Latinos are the most victimized racial groups
-a <- mydata %>%
-  filter(race != is.na(race)) %>%
-  group_by(race) %>%
-  summarise(victim = mean(victim, na.rm = T)) 
-
-#victim rate close to mean for non carriers, much higher for carriers ~ 0.58
-b <- mydata %>%
-  group_by(weapon.carry) %>%
-  summarise(victim = mean(victim, na.rm = T))
 
 #Dependent Variable Breakdown Summary
 Proportion <- sapply(mydata.dv, mean, na.rm = T)
@@ -346,21 +376,19 @@ age <- mean(mydata.c$age)
 female <- mean(mydata.c$female)
 family.income <- mean(mydata.c$family.income)
 weapon.carry <- mean(mydata.c$weapon.carry)
+racial.heterogeneity <- mean(mydata.c$racial.heterogeneity)
 network.delinquency <- seq(0, 5, by = .1)
 popularity <- mean(mydata.c$popularity)
 centrality <- quantile(mydata.c$centrality, c(.1, .5, .9))
 density <- mean(mydata.c$density)
 
 
-predictions <- as.tibble(expand.grid(age, female, family.income, weapon.carry, network.delinquency, popularity, centrality, density))   
-colnames(predictions) <- c("age", "female", "family.income", "weapon.carry", "network.delinquency", "popularity", "centrality", "density")      
-
-
-#inv_logit_scaled() logistic() for BRMS models that you should probably try to run. 
+predictions <- as.tibble(expand.grid(age, female, family.income, weapon.carry, racial.heterogeneity, network.delinquency, popularity, centrality, density))   
+colnames(predictions) <- c("age", "female", "family.income", "weapon.carry", "racial.heterogeneity", "network.delinquency", "popularity", "centrality", "density")      
 
 #Predicted Likelihood of Victimization added to the newdata 
 samples <- predictions %>%             
-  mutate(victim = logistic(m1[10,] + m1[1,]*age + m1[2,]*female + m1[3,]*family.income + m1[4,]*weapon.carry + m1[5,]*network.delinquency + m1[6,]*popularity + m1[7,]*centrality + m1[8,]*density + m1[9,]*network.delinquency*centrality)) %>%         
+  mutate(victim = logistic(b[11,] + b[1,]*age + b[2,]*female + b[3,]*family.income + b[4,]*weapon.carry + b[5,]*racial.heterogeneity + b[6,]*network.delinquency + b[7,]*popularity + b[8,]*centrality + b[9,]*density + b[10,]*network.delinquency*centrality)) %>%         
   group_by(network.delinquency, centrality) %>%                              
   slice(1)
 
@@ -369,8 +397,8 @@ samples$centrality <- as.character(samples$centrality)
 samples <- samples %>%
   mutate(Centrality = case_when(
     centrality == "0" ~ "10th Percentile",
-    centrality == "0.7867627910904" ~ "50th Percentile",
-    centrality == "1.70167438806094"  ~ "90th Percentile",
+    centrality == "0.78677539864745" ~ "50th Percentile",
+    centrality == "1.70187217534238"  ~ "90th Percentile",
     T ~ NA_character_))
 
 plot1 <- ggplot(samples, aes(x = network.delinquency , group = Centrality)) +
@@ -389,17 +417,18 @@ age <- mean(mydata.c$age)
 female <- mean(mydata.c$female)
 family.income <- mean(mydata.c$family.income)
 weapon.carry <- mean(mydata.c$weapon.carry, na.rm = T)
+racial.heterogeneity <- mean(mydata.c$racial.heterogeneity)
 network.delinquency <- seq(0, 5, by = .1)
 centrality <- mean(mydata.c$centrality, na.rm = T)
 popularity <- quantile(mydata.c$popularity, c(.1, .5, .9))
 density <- mean(mydata.c$density, na.rm = T)
 
-predictions <- as.tibble(expand.grid(age, female, family.income, weapon.carry, network.delinquency, popularity, centrality, density))   
-colnames(predictions) <- c("age", "female", "family.income", "weapon.carry", "network.delinquency", "popularity", "centrality", "density")      
+predictions <- as.tibble(expand.grid(age, female, family.income, weapon.carry, racial.heterogeneity, network.delinquency, popularity, centrality, density))   
+colnames(predictions) <- c("age", "female", "family.income", "weapon.carry", "racial.heterogeneity", "network.delinquency", "popularity", "centrality", "density")      
 
 #Predicted Likelihood of Victimization added to the newdata 
 samples <- predictions %>%             
-  mutate(victim = logistic(m2[10,] + m2[1,]*age + m2[2,]*female + m2[3,]*family.income + m2[4,]*weapon.carry + m2[5,]*network.delinquency + m2[6,]*popularity + m2[7,]*centrality + m2[8,]*density + m2[9,]*network.delinquency*popularity)) %>%         
+  mutate(victim = logistic(c[11,] + c[1,]*age + c[2,]*female + c[3,]*family.income + c[4,]*weapon.carry + c[5,]*racial.heterogeneity + c[6,]*network.delinquency + c[7,]*popularity + c[8,]*centrality + c[9,]*density + c[10,]*network.delinquency*popularity)) %>%         
   group_by(network.delinquency, popularity) %>%                              
   slice(1)
 
@@ -429,16 +458,17 @@ age <- mean(mydata.c$age)
 female <- mean(mydata.c$female)
 family.income <- mean(mydata.c$family.income)
 weapon.carry <- mean(mydata.c$weapon.carry, na.rm = T)
+racial.heterogeneity <- mean(mydata.c$racial.heterogeneity)
 network.delinquency <- seq(0, 5, by = .1)
 centrality <- mean(mydata.c$centrality, na.rm = T)
 density <- quantile(mydata.c$density, c(.1, .5, .9))
 popularity <- mean(mydata.c$popularity, na.rm = T)
 
-predictions <- as.tibble(expand.grid(age, female, family.income, weapon.carry, network.delinquency, popularity, centrality, density))   
-colnames(predictions) <- c("age", "female", "family.income", "weapon.carry", "network.delinquency", "popularity", "centrality", "density")      
+predictions <- as.tibble(expand.grid(age, female, family.income, weapon.carry, racial.heterogeneity, network.delinquency, popularity, centrality, density))   
+colnames(predictions) <- c("age", "female", "family.income", "weapon.carry","racial.heterogeneity", "network.delinquency", "popularity", "centrality", "density")      
 #Predicted Likelihood of Victimization added to the newdata 
 samples <- predictions%>%             
-  mutate(victim = logistic(m3[10,] + m3[1,]*age + m3[2,]*female + m3[3,]*family.income + m3[4,]*weapon.carry + m3[5,]*network.delinquency + m3[6,]*popularity + m3[7,]*centrality + m3[8,]*density + m3[9,]*network.delinquency*density))%>%         
+  mutate(victim = logistic(d[11,] + d[1,]*age + d[2,]*female + d[3,]*family.income + d[4,]*weapon.carry + d[5,]*racial.heterogeneity + d[6,]*network.delinquency + d[7,]*popularity + d[8,]*centrality + d[9,]*density + d[10,]*network.delinquency*density))%>%         
   group_by(network.delinquency, density) %>%                              
   slice(1)
 
@@ -522,11 +552,13 @@ table3
 
 ##Analytic Strategy
 
-The dependent variable for this paper is dichotomous and therefore, the normal assumptions of ordinary least squared regression cannot be maintained. To compensate, logistic regression analysis, designed to handle dependent variables of this nature, is used to analyze the data. The logistic regression analysis for this project interprets the odds ratios for the independent variables that represent the individual variable’s influence on the likelihood of victimization while holding all other variables in the equation constant at their means. The statistical method used in this paper anticipates victimization as the data used to construct the primary independent variables were collected in the first in-school survey while the data used to construct the variable victimization come from the in-home interviews conducted approximately a year after the first wave of in-school surveys were administered.
+The dependent variable for this paper is dichotomous and therefore, the normal assumptions of ordinary least squared regression cannot be maintained. To compensate, logistic regression analysis, designed to handle dependent variables of this nature, is used to analyze the data. The logistic regression analysis for this project interprets the odds ratios for the independent variables that represent the individual variable’s influence on the likelihood of victimization while holding all other variables in the equation constant at their means. The statistical method used in this paper anticipates victimization as the data used to construct the primary independent variables were collected in the first in-school survey while the data used to construct the variable victimization come from the in-home interviews conducted approximately a year after the first wave of in-school surveys were administered. This study design allows me to directly test the interactions between network structure as measured by popularity, centrality, and density and network context as measured by friendship delinquency and the resulting association with victimization. The functional form of the included interaction models is as follows: 
 
-The priors used in the analysis were chosen for their lack of informativeness. They are very gently regularizing, but will be overwhelmed by even moderate evidence.
-
-To understand the combined effect of network structure and content on victimization interaction terms where added to the logistic regression models and plotted. 
+$$Victim \sim Binomial(1,p_i)$$
+$$logit(p_i) = \alpha + \textbf{X}_i \pmb\beta_i$$
+$$\alpha \sim Normal(0, 10)$$
+$$\pmb\beta_i \sim Normal (0, 10)$$
+where $\textbf{X}_i$ represents a vector of covariates for respondent i that all use the same priors. The priors used in the analysis were chosen for their lack of informativeness. They are very gently regularizing, and will be overwhelmed by even moderate evidence of an association between the included predictors and victimization.
 
 Race is omitted from the regression in favor a descriptive analysis. [white logic white methods] (Bonilla-Silva & Zuberi 2008)
 
