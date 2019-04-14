@@ -319,7 +319,7 @@ race.victim <- mydata.c %>%
   ggplot(aes(x = race)) +
   geom_bar(aes(fill = as.character(victim)), position = "fill") + guides(fill = F) + 
   geom_hline(yintercept= mu, linetype = "dashed", color = "red3") + #can use annotate() to label the mean line
-  annotate("text", x = 8, y = 0.2, label = expression(mu), color = "darkred") +
+  annotate("text", x = 8, y = 0.2, label = expression(mu), color = "red3") +
   coord_flip() +
   labs(title = "Victimization by Race", y = "Proportion of Victims", x = " ") +
   scale_colour_pander() +
