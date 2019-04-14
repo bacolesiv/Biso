@@ -1,7 +1,7 @@
 ---
 title: "Final Project"
 author: "Bernard A. Coles IV"
-date: "3/9/2019"
+date: "5/2/2019"
 output:
   pdf_document: default
   html_document:
@@ -406,7 +406,7 @@ samples <- samples %>%
 
 plot1 <- ggplot(samples, aes(x = network.delinquency , group = Centrality)) +
   geom_line(aes(y = victim, color = Centrality), size = 1.5) +
-  labs(title = "The Conditional Effects of Network Structure and Form on Victimization", subtitle = "The Interaction Effect of Centrality & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization", caption = "Figure 2") +
+  labs(title = "The Conditional Effects of Network Content and Form on Victimization", subtitle = "The Interaction Effect of Centrality & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization", caption = "Figure 2") +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
@@ -447,7 +447,7 @@ samples$Popularity <- as.factor(samples$Popularity)
 
 plot2 <- ggplot(samples, aes(x = network.delinquency , group = Popularity)) +
   geom_line(aes(y = victim, color = Popularity) , size = 1.5) +
-  labs(title = "The Conditional Effects of Network Structure and Form on Victimization", subtitle = "The Interaction Effect of Popularity & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization", caption = "Figure 3") +
+  labs(title = "The Conditional Effects of Network Content and Form on Victimization", subtitle = "The Interaction Effect of Popularity & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization", caption = "Figure 3") +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
@@ -488,7 +488,7 @@ samples <- samples %>%
 
 plot3 <- ggplot(samples, aes(x = network.delinquency , group = Density)) +
   geom_line(aes(y = victim, color = Density) , size = 1.5) +
-  labs(title = "The Conditional Effects of Network Structure and Form on Victimization", subtitle = "The Interaction Effect of Density & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization", caption = "Figure 4") +
+  labs(title = "The Conditional Effects of Network Content and Form on Victimization", subtitle = "The Interaction Effect of Density & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization", caption = "Figure 4") +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
@@ -520,13 +520,13 @@ Data from the more in-depth in-home interviews contains sensitive information on
 
 The variable victim is a composite indicator of victimization experienced in the twelve months prior to the wave 1 in-home interviews. It takes on the value of 0, if the respondent experienced none of the forms of physical victimization listed in Table 1, or 1 if they have experienced one of the forms  at least once in the past year. The variable was designed to measure purely physical manifestations of victimization i.e. being shot, stabbed, jumped, or having a knife or gun pulled on you. Table 2 shows that the victimization variable has a mean of 0.201 and a standard deviation of .401 for the research sample. About 20% of the sample has experienced one of these forms of violence. 
 
-```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-table1
-```
-
 *Basic Controls* 
 
 The respondent's age, biological sex, and family's annual income at the time of the interview are the basic control variables used in the analysis. Literature on victimization claims that younger teens and males have higher risk for victimization. Family income, measured as parent's reported annual income in thousands of dollars, is included in the models to serve as a weak control for the potential influences of socioeconomic status on exposure to violence. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+table1
+```
 
 *Popularity, Centrality, and Standing out*
 
@@ -544,6 +544,10 @@ The variable weapon carry is a binary indicator for carrying a knife, club, or g
 *Network Delinquency*
 
 The key contextual network variable deals with delinquency within the respondent’s peer group. The variable network delinquency is a measure of minor delinquent acts committed by the respondent’s ten closest friends in the year prior to taking the in-school surveys. It takes the information given by friends named in the respondents in-school survey and averages their scores to create a delinquency measure. The delinqeuncy information provided for each friend named comes from the qustions in Table 2 which ranged from 0, indicating never having committed the act, to 5, committing the act up to 5 days of the week. The index ranges from 0 to 4.714 with an average score of 1.139 and a standard deviation of 0.587.
+
+*Racial Heterogeneity*
+
+I use the network racial heterogeneity to control for potential counfounding dealing with the normative climate. Racial Heterogeneity has been linked to a lack of normative consensus but for this project I am interested in shifting attitudes about the appropriateness of delinquency in particular. The variable racial heterogeneity is a measure of the sheer racial diversity of the respondent's friendship network, with respect to the number of traits present in the respondent's school. A score of 0 would indicate that the the network is completely homogeneous and a score of 1 would indicate that each racial identity recorded at the school level is also present in the respondent's own network. The variable from the sample has mean of 0.444 and a standard deviation of 0.195. 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 table2
@@ -563,9 +567,7 @@ $$\alpha \sim Normal(0, 10)$$
 $$\pmb\beta_i \sim Normal (0, 10)$$
 where $\textbf{X}_i$ represents a vector of covariates for respondent i and $\pmb\beta_i$ is the vector of associated estimates. Because there is little research informing victimization in a bayesion context each beta estimate assumes a normal distributions with weakly informative priors. The priors used in the analysis were chosen for their lack of informativeness. They are very gently regularizing, and will be overwhelmed by even moderate evidence of an association between the included predictors and victimization.
 
-Race is omitted from the regression in favor a descriptive analysis. [white logic white methods] (Bonilla-Silva & Zuberi 2008)
-
-If you have a substantive question that IC says doesnt help your fit you can still report the results as long as they are relevant to your question. IC will usually only tell you to include the interaction if there is a *strong* relationship present. You do need to discuss IC for the project. 
+If you have a substantive question that IC says doesnt help your fit you can still report the results as long as they are relevant to your question. IC will usually only tell you to include the interaction if there is a *strong* relationship present. You do need to discuss IC for the project. Racial heterogeneity in neighborhoods has been linked to a lack of normative consensus bu scholar's who've tested Sutherland & Cressy's differential association theory of crime. In lieu of using respondent;s race in the inferential model I use the proportion of racial identities present in the respondent's friendship network that differ from their own self-identified race. In order to not comppletely omit the role of racial identity in victimization a descriptive plot details the relationship. 
 
 ##Results
 
