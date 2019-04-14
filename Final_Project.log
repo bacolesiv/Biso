@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018) (preloaded format=pdflatex 2018.4.16)  10 APR 2019 16:29
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018) (preloaded format=pdflatex 2018.4.16)  14 APR 2019 13:43
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -835,7 +835,7 @@ as been already used, duplicate ignored
 l.383 R
        esearch suggests that race is a robust determinant of victimization.] [5
  <./Final_Project_files/figure-latex/unnamed-chunk-4-1.pdf>]
-<Final_Project_files/figure-latex/unnamed-chunk-7-1.pdf, id=68, 462.72874pt x 3
+<Final_Project_files/figure-latex/unnamed-chunk-7-1.pdf, id=69, 462.72874pt x 3
 23.2075pt>
 File: Final_Project_files/figure-latex/unnamed-chunk-7-1.pdf Graphic file (type
  pdf)
@@ -857,7 +857,7 @@ eady used, duplicate ignored
                                                   \fi \fi 
 l.500 W
        hen analyzing respondents who are embedded in highly delinquent]
-<Final_Project_files/figure-latex/unnamed-chunk-8-1.pdf, id=75, 462.72874pt x 3
+<Final_Project_files/figure-latex/unnamed-chunk-8-1.pdf, id=76, 462.72874pt x 3
 23.2075pt>
 File: Final_Project_files/figure-latex/unnamed-chunk-8-1.pdf Graphic file (type
  pdf)
@@ -866,7 +866,7 @@ Package pdftex.def Info: Final_Project_files/figure-latex/unnamed-chunk-8-1.pdf
   used on input line 523.
 (pdftex.def)             Requested size: 462.73466pt x 323.21164pt.
 [7 <./Final_Project_files/figure-latex/unnamed-chunk-7-1.pdf>]
-<Final_Project_files/figure-latex/unnamed-chunk-9-1.pdf, id=90, 462.72874pt x 3
+<Final_Project_files/figure-latex/unnamed-chunk-9-1.pdf, id=91, 462.72874pt x 3
 23.2075pt>
 File: Final_Project_files/figure-latex/unnamed-chunk-9-1.pdf Graphic file (type
  pdf)
@@ -908,10 +908,10 @@ cal/texlive/2018/texmf-dist/fonts/type1/public/lm/lmr10.pfb></usr/local/texlive
 -dist/fonts/type1/public/lm/lmri10.pfb></usr/local/texlive/2018/texmf-dist/font
 s/type1/public/lm/lmri12.pfb></usr/local/texlive/2018/texmf-dist/fonts/type1/pu
 blic/lm/lmsy10.pfb>
-Output written on Final_Project.pdf (9 pages, 200796 bytes).
+Output written on Final_Project.pdf (9 pages, 200915 bytes).
 PDF statistics:
- 160 PDF objects out of 1000 (max. 8388607)
- 126 compressed objects within 2 object streams
+ 161 PDF objects out of 1000 (max. 8388607)
+ 127 compressed objects within 2 object streams
  20 named destinations out of 1000 (max. 500000)
  10301 words of extra memory for PDF output out of 12000 (max. 10000000)
 
