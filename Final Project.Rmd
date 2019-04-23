@@ -17,6 +17,8 @@ library(kableExtra)
 library(ggthemes)
 library(knitr)
 library(broom)
+library(brms)
+library(loo)
 
 #Windows
 #load("E:/Repository/Biso/Biso/data/wave1.rda")
@@ -154,148 +156,83 @@ mydata <- mydata %>%
 mydata.c <- mydata[complete.cases(mydata), ]
 ```
 
-```{r Models, message=FALSE, warning=FALSE, include=FALSE}
-model <- map(alist(
-  victim ~ dbinom(1, p),
-  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*racial.heterogeneity + b6*network.delinquency + b7*popularity + b8*centrality + b9*density,
-  a ~ dnorm(0,10),
-  b1 ~ dnorm(0,10),
-  b2 ~ dnorm(0,10),
-  b3 ~ dnorm(0,10),
-  b4 ~ dnorm(0,10),
-  b5 ~ dnorm(0,10),
-  b6 ~ dnorm(0,10), 
-  b7 ~ dnorm(0,10), 
-  b8 ~ dnorm(0,10),
-  b9 ~ dnorm(0, 10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0))
+```{r Models, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+model <- brm(data = mydata.c, family = binomial,
+             victim | trials(1) ~ 1 + age + female + family.income + weapon.carry + racial.heterogeneity + network.delinquency + popularity + centrality + density, 
+             prior = c(prior(normal(0, 10), class = Intercept), 
+                       prior(normal(0, 10), class = b)), 
+                       iter = 2500, warmup = 500, cores = 4, chains = 4, seed = 10)
 
-imodel1 <- map(alist(
-  victim ~ dbinom(1, p),
-  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*racial.heterogeneity + b6*network.delinquency + b7*popularity + b8*centrality + b9*density + b10*network.delinquency*centrality,
-  a ~ dnorm(0,10),
-  b1 ~ dnorm(0,10),
-  b2 ~ dnorm(0,10),
-  b3 ~ dnorm(0,10),
-  b4 ~ dnorm(0,10),
-  b5 ~ dnorm(0,10),
-  b6 ~ dnorm(0,10), 
-  b7 ~ dnorm(0,10), 
-  b8 ~ dnorm(0,10), 
-  b9 ~ dnorm(0,10), 
-  b10 ~ dnorm(0, 10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0, b10=0))
+imodel1 <- update(model, newdata = mydata.c, formula = victim | trials(1) ~ 1 + age + female + family.income + weapon.carry + racial.heterogeneity + network.delinquency + popularity + centrality + density + network.delinquency:centrality)
+             
+imodel2 <- update(model, newdata = mydata.c, formula = victim | trials(1) ~ 1 + age + female + family.income + weapon.carry + racial.heterogeneity + network.delinquency + popularity + centrality + density + network.delinquency:popularity)
 
-imodel2 <- map(alist(
-  victim ~ dbinom(1, p),
-  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*racial.heterogeneity + b6*network.delinquency + b7*popularity + b8*centrality + b9*density + b10*network.delinquency*popularity,
-  a ~ dnorm(0,10),
-  b1 ~ dnorm(0,10),
-  b2 ~ dnorm(0,10),
-  b3 ~ dnorm(0,10),
-  b4 ~ dnorm(0,10),
-  b5 ~ dnorm(0,10),
-  b6 ~ dnorm(0,10), 
-  b7 ~ dnorm(0,10), 
-  b8 ~ dnorm(0,10), 
-  b9 ~ dnorm(0,10), 
-  b10 ~ dnorm(0,10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0, b10=0))
+imodel3 <- update(model, newdata = mydata.c, formula = victim | trials(1) ~ 1 + age + female + family.income + weapon.carry + racial.heterogeneity + network.delinquency + popularity + centrality + density + network.delinquency:density)
+```
 
-imodel3 <- map(alist(
-  victim ~ dbinom(1, p),
-  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*racial.heterogeneity + b6*network.delinquency + b7*popularity + b8*centrality + b9*density + b10*network.delinquency*density,
-  a ~ dnorm(0,10),
-  b1 ~ dnorm(0,10),
-  b2 ~ dnorm(0,10),
-  b3 ~ dnorm(0,10),
-  b4 ~ dnorm(0,10),
-  b5 ~ dnorm(0,10),
-  b6 ~ dnorm(0,10), 
-  b7 ~ dnorm(0,10), 
-  b8 ~ dnorm(0,10), 
-  b9 ~ dnorm(0,10), 
-  b10 ~ dnorm(0, 10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0, b10=0))
+```{r Model Tables, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+set.seed(10)
+#Evaluating Information Criteria
+table4 <- model_weights(model, imodel1, imodel2, imodel3, weights = "waic") %>%
+  as_tibble() %>% 
+  rename(weight = value) %>% 
+  mutate(Model  = c("Model 1", "Model 2", "Model 3", "Model 4"),
+         Weight = weight %>% round(digits = 2)) %>% 
+  select(Model, Weight) %>% 
+  arrange(desc(Weight)) %>% 
+  kable(caption = "Comparing Model Weights", "latex", booktabs = T) %>%
+  kable_styling("striped")
 
-inames <- c("Age", "Sex", "Family Income", "Weapon Carry", "Racial Heterogeneity",  "Network Delinquency", "Popularity", "Centrality", "Density", "Interaction Term", "Intercept")
+#Odds Ratios Generated from the Models
+t5 <- fixef(model) %>%
+  tidy() %>%
+  mutate(OR = exp(Estimate), 
+         `2.5%` = exp(Q2.5), 
+         `97.5%` = exp(Q97.5)) %>%
+  select(OR, `2.5%`, `97.5%`)
 
-names <- c("Age", "Sex", "Family Income", "Weapon Carry", "Racial Heterogeneity", "Network Delinquency", "Popularity", "Centrality", "Density", "Intercept")
+name <- c("Intercept", "Age", "Sex", "Family Income", "Weapon Carry", "Racial Heterogeneity",  "Network Delinquency", "Popularity", "Centrality", "Density")
 
-a <- as.data.frame((model@coef),1)
-a1 <- precis(model)@output
-low <- a1$`5.5%` 
-up <- a1$`94.5%`
-A <- cbind(low, up)
+t5 <- t5 %>%
+  round(digits = 3)
 
-b <- as.data.frame((imodel1@coef),1)
-b1 <- precis(imodel1)@output
-low <- b1$`5.5%` 
-up <- b1$`94.5%`
-B <- cbind(low, up)
+rownames(t5) <- name 
 
-c  <- as.data.frame((imodel2@coef),1)
-c1 <- precis(imodel2)@output
-low <- c1$`5.5%` 
-up <- c1$`94.5%`
-C <- cbind(low, up)
+a <- fixef(imodel1) %>%
+  tidy() %>%
+  mutate(OR = exp(Estimate), 
+         `2.5%` = exp(Q2.5), 
+         `97.5%` = exp(Q97.5)) %>%
+  select(OR, `2.5%`, `97.5%`)
 
-d <- as.data.frame((imodel3@coef),1)
-d1 <- precis(imodel3)@output
-low <- d1$`5.5%` 
-up <- d1$`94.5%`
-D <- cbind(low, up)
+b <- fixef(imodel2) %>%
+  tidy() %>%
+  mutate(OR = exp(Estimate), 
+         `2.5%` = exp(Q2.5), 
+         `97.5%` = exp(Q97.5)) %>%
+  select(OR, `2.5%`, `97.5%`)
 
+c <- fixef(imodel3) %>%
+  tidy() %>%
+  mutate(OR = exp(Estimate), 
+         `2.5%` = exp(Q2.5), 
+         `97.5%` = exp(Q97.5)) %>%
+  select(OR, `2.5%`, `97.5%`)
 
+t6 <- cbind(a,b,c) %>%
+  round(digits = 3)
 
-m <- cbind(a, A)
-m1 <- cbind(b, B)
-m2 <- cbind(c, C)
-m3 <- cbind(d, D)
+names <- c("Intercept", "Age", "Sex", "Family Income", "Weapon Carry", "Racial Heterogeneity",  "Network Delinquency", "Popularity", "Centrality", "Density", "Interaction Term")
 
+rownames(t6) <- names
 
-
-t4 <- m %>%
-  mutate(OR = exp((model@coef)),
-         `5.5%` = exp(low), 
-         `94.5%` = exp(up)) %>%
-  select(OR, `5.5%`, `94.5%`)
-
-x <- m1 %>%
-  mutate(OR = exp((imodel1@coef)),
-         `5.5%`= exp(low), 
-         `94.5%` = exp(up)) %>%
-  select(OR, `5.5%`, `94.5%`)
-
-y <- m2 %>%
-  mutate(OR = exp((imodel2@coef)),
-         `5.5%` = exp(low), 
-         `94.5%` = exp(up)) %>%
-  select(OR, `5.5%`, `94.5%`)
-
-z <- m3 %>%
-  mutate(OR = exp((imodel3@coef)),
-         `5.5%` = exp(low), 
-         `94.5%` = exp(up)) %>%
-  select(OR, `5.5%`, `94.5%`)
-
-t4 <- round(t4, digits = 3)
-x <- round(x, digits = 3)
-y <- round(y, digits = 3)
-z <- round(z, digits = 3)
-
-
-rownames(t4) <- names
-rownames(x) <- inames 
-rownames(y) <- inames 
-rownames(z) <- inames 
-
-
-t5 <- cbind(x, y, z)
-
-table4 <- kable(t4, caption = "Logistic Regression Model", "latex", booktabs = T) %>%
-  add_header_above(c("Predictors", "Model 1" = 3)) %>%
+table5 <- kable(t5, caption = "Base Logistic Regression Model", "latex", booktabs = T) %>%
+  add_header_above(c(" ", "Model 1" = 3)) %>%
   kable_styling("striped") %>%
   footnote(general = "N = 3145")
 
-table5 <- kable(t5, caption = "Interaction Models", "latex", booktabs = T) %>%
-  add_header_above(c("Predictors", "Model 2" = 3, "Model 3" = 3, "Model 4" = 3)) %>%
+table6 <- kable(t6, caption = "Interaction Models", "latex", booktabs = T) %>%
+  add_header_above(c(" ", "Model 2" = 3, "Model 3" = 3, "Model 4" = 3)) %>%
   kable_styling("striped") %>%
   footnote(general = "N = 3145")
 ```
@@ -374,7 +311,7 @@ table3 <- kable(t3, caption = "Descriptive Statistics","latex", booktabs = T) %>
 ```
 
 ```{r Figure 1, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-#New data frame with variables held constant - Interaction terms held at quantiles
+#New data frame with variables held constant - Interactions held at quantiles or scaled
 age <- mean(mydata.c$age)
 female <- mean(mydata.c$female)
 family.income <- mean(mydata.c$family.income)
@@ -389,9 +326,11 @@ density <- mean(mydata.c$density)
 predictions <- as.tibble(expand.grid(age, female, family.income, weapon.carry, racial.heterogeneity, network.delinquency, popularity, centrality, density))   
 colnames(predictions) <- c("age", "female", "family.income", "weapon.carry", "racial.heterogeneity", "network.delinquency", "popularity", "centrality", "density")      
 
+e <- fixef(imodel1)
+
 #Predicted Likelihood of Victimization added to the newdata 
 samples <- predictions %>%             
-  mutate(victim = logistic(b[11,] + b[1,]*age + b[2,]*female + b[3,]*family.income + b[4,]*weapon.carry + b[5,]*racial.heterogeneity + b[6,]*network.delinquency + b[7,]*popularity + b[8,]*centrality + b[9,]*density + b[10,]*network.delinquency*centrality)) %>%         
+  mutate(victim = inv_logit_scaled(e[1,1] + e[2,1]*age + e[3,1]*female + e[4,1]*family.income + e[5,1]*weapon.carry + e[6,1]*racial.heterogeneity + e[7,1]*network.delinquency + e[8,1]*popularity + e[9,1]*centrality + e[10,1]*density + e[11,1]*network.delinquency*centrality)) %>%         
   group_by(network.delinquency, centrality) %>%                              
   slice(1)
 
@@ -406,11 +345,11 @@ samples <- samples %>%
 
 plot1 <- ggplot(samples, aes(x = network.delinquency , group = Centrality)) +
   geom_line(aes(y = victim, color = Centrality), size = 1.5) +
-  labs(title = "The Conditional Effects of Network Content and Form on Victimization", subtitle = "The Interaction Effect of Centrality & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization", caption = "Figure 2") +
+  labs(title = "The Conditional Effects of Network Content and Form on Victimization", subtitle = "Interacting Network Delinquency & Centrality", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization", caption = "Figure 2") +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
-  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5)) +
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5, size = 12), plot.subtitle = element_text(hjust = 0.5)) +
   ggsave("plot1.pdf", width = 20, height = 15, units = "cm")
 ```
 
@@ -429,9 +368,11 @@ density <- mean(mydata.c$density, na.rm = T)
 predictions <- as.tibble(expand.grid(age, female, family.income, weapon.carry, racial.heterogeneity, network.delinquency, popularity, centrality, density))   
 colnames(predictions) <- c("age", "female", "family.income", "weapon.carry", "racial.heterogeneity", "network.delinquency", "popularity", "centrality", "density")      
 
+e <- fixef(imodel2)
+
 #Predicted Likelihood of Victimization added to the newdata 
 samples <- predictions %>%             
-  mutate(victim = logistic(c[11,] + c[1,]*age + c[2,]*female + c[3,]*family.income + c[4,]*weapon.carry + c[5,]*racial.heterogeneity + c[6,]*network.delinquency + c[7,]*popularity + c[8,]*centrality + c[9,]*density + c[10,]*network.delinquency*popularity)) %>%         
+  mutate(victim = inv_logit_scaled(e[1,1] + e[2,1]*age + e[3,1]*female + e[4,1]*family.income + e[5,1]*weapon.carry + e[6,1]*racial.heterogeneity + e[7,1]*network.delinquency + e[8,1]*popularity + e[9,1]*centrality + e[10,1]*density + e[11,1]*network.delinquency*popularity)) %>%         
   group_by(network.delinquency, popularity) %>%                              
   slice(1)
 
@@ -447,11 +388,11 @@ samples$Popularity <- as.factor(samples$Popularity)
 
 plot2 <- ggplot(samples, aes(x = network.delinquency , group = Popularity)) +
   geom_line(aes(y = victim, color = Popularity) , size = 1.5) +
-  labs(title = "The Conditional Effects of Network Content and Form on Victimization", subtitle = "The Interaction Effect of Popularity & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization", caption = "Figure 3") +
+  labs(title = "The Conditional Effects of Network Content and Form on Victimization", subtitle = "Interacting Network Delinquency & Popularity", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization", caption = "Figure 3") +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
-  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5)) +
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5, size = 12), plot.subtitle = element_text(hjust = 0.5)) +
   ggsave("plot2.pdf", width = 20, height = 15, units = "cm")
 ```
 
@@ -468,10 +409,13 @@ density <- quantile(mydata.c$density, c(.1, .5, .9))
 popularity <- mean(mydata.c$popularity, na.rm = T)
 
 predictions <- as.tibble(expand.grid(age, female, family.income, weapon.carry, racial.heterogeneity, network.delinquency, popularity, centrality, density))   
-colnames(predictions) <- c("age", "female", "family.income", "weapon.carry","racial.heterogeneity", "network.delinquency", "popularity", "centrality", "density")      
+colnames(predictions) <- c("age", "female", "family.income", "weapon.carry","racial.heterogeneity", "network.delinquency", "popularity", "centrality", "density")   
+
+e <- fixef(imodel3)
+
 #Predicted Likelihood of Victimization added to the newdata 
-samples <- predictions%>%             
-  mutate(victim = logistic(d[11,] + d[1,]*age + d[2,]*female + d[3,]*family.income + d[4,]*weapon.carry + d[5,]*racial.heterogeneity + d[6,]*network.delinquency + d[7,]*popularity + d[8,]*centrality + d[9,]*density + d[10,]*network.delinquency*density))%>%         
+samples <- predictions %>%             
+  mutate(victim = inv_logit_scaled(e[1,1] + e[2,1]*age + e[3,1]*female + e[4,1]*family.income + e[5,1]*weapon.carry + e[6,1]*racial.heterogeneity + e[7,1]*network.delinquency + e[8,1]*popularity + e[9,1]*centrality + e[10,1]*density + e[11,1]*network.delinquency*density)) %>%         
   group_by(network.delinquency, density) %>%                              
   slice(1)
 
@@ -488,11 +432,11 @@ samples <- samples %>%
 
 plot3 <- ggplot(samples, aes(x = network.delinquency , group = Density)) +
   geom_line(aes(y = victim, color = Density) , size = 1.5) +
-  labs(title = "The Conditional Effects of Network Content and Form on Victimization", subtitle = "The Interaction Effect of Density & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization", caption = "Figure 4") +
+  labs(title = "The Conditional Effects of Network Content and Form on Victimization", subtitle = "Interacting Network Delinquency & Density", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization", caption = "Figure 4") +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
-  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5),  plot.subtitle = element_text(hjust = 0.5)) +
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5, size = 12),  plot.subtitle = element_text(hjust = 0.5)) +
   ggsave("plot3.pdf", width = 20, height = 15, units = "cm")
 ```
 
@@ -512,7 +456,6 @@ Add Health’s In-School Questionnaire, a self-administered instrument, was dist
 *In-Home Interviews*
 
 Data from the more in-depth in-home interviews contains sensitive information on the adolescents such as experience with drugs and alcohol and various other risky behaviors such as carrying a weapon. One of the most advantageous components of this in-home method was the use of laptop computers which played prerecorded questions about experiences with victimization. This method of data collection helped to maintain confidentiality on numerous sensitive subjects. These self-reported experiences from the first wave of in-home interviews was used to construct the dependent variable – victim – for this study. The final research sample for the study consisted of 3145 respondents with data from both the in-school and in-home interviews. 
-
 
 ##Variable Construction
 
@@ -567,7 +510,16 @@ $$\alpha \sim Normal(0, 10)$$
 $$\pmb\beta_i \sim Normal (0, 10)$$
 where $\textbf{X}_i$ represents a vector of covariates for respondent i and $\pmb\beta_i$ is the vector of associated estimates. Because there is little research informing victimization in a bayesion context each beta estimate assumes a normal distributions with weakly informative priors. The priors used in the analysis were chosen for their lack of informativeness. They are very gently regularizing, and will be overwhelmed by even moderate evidence of an association between the included predictors and victimization.
 
-If you have a substantive question that IC says doesnt help your fit you can still report the results as long as they are relevant to your question. IC will usually only tell you to include the interaction if there is a *strong* relationship present. You do need to discuss IC for the project. Racial heterogeneity in neighborhoods has been linked to a lack of normative consensus bu scholar's who've tested Sutherland & Cressy's differential association theory of crime. In lieu of using respondent;s race in the inferential model I use the proportion of racial identities present in the respondent's friendship network that differ from their own self-identified race. In order to not comppletely omit the role of racial identity in victimization a descriptive plot details the relationship. 
+Racial heterogeneity in neighborhoods has been linked to a lack of normative consensus bu scholar's who've tested Sutherland & Cressy's differential association theory of crime. In lieu of using respondent's race in the inferential model I use the proportion of racial identities present in the respondent's friendship network that differ from their own self-identified race. In order to not comppletely omit the role of racial identity in victimization a descriptive plot details the relationship. 
+
+*Information Criteria* 
+
+If you have a substantive question that IC says doesnt help your fit you can still report the results as long as they are relevant to your question. IC will usually only tell you to include the interaction if there is a strong relationship present. You do need to discuss IC for the project. The Akaike weight formula might look rather odd, but really all it is doing is putting WAIC on a probability scale. so it just undoes the multiplication by -2 and then exponentiates to reverse the log transformation. Then it standardizes by dividing by the total. So each weight will be a number from 0 to 1, and the weights together always sum to 1. Now larger values are better. But what do these weights mean? There actually isn’t a consensus about that. But here’s Akaike’s interpretation, which is common. A model’s weight is an estimate of the probability that the model will make the best predictions on new data, conditional on the set of models considered 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+table4
+```
+
 
 ##Results
 
@@ -578,13 +530,13 @@ grid.arrange(race.plot, race.victim, nrow = 2, bottom = textGrob("Figure 1", x =
 Research suggests that race is a robust determinant of victimization. Van Dorn (2004) states that there are a substantial number of high school students who reported seeing or hearing about racially or religiously motivated confrontations. In fact, 75% of all high school students reported seeing these incidences on a regular basis. What’s more, a study by the National School Boards Association (1993) reported that almost 30% of all school violence was related to race and ethnicity (Van Dorn 2004). Hindelang, Gottfredson, and Garofalo (1978) suggest that demographic characteristics (age, gender, income, etc.) are associated with various role expectations, which, in turn, lead to difference in lifestyles, exposure to risk, and subsequently to difference in the likelihood of victimization (Miethe, Stafford, and Long 1987; Haggerty, Skinner, McGlynn-Wright, Catalano, and Crutchfield 2013). Studies of violent victimization among youth have consistently shown that individuals of color, particularly African Americans, are at elevated risk (Hanish and Guerra 2000; Haggerty et al. 2013). Figure 1 shows the racial composition of the complete sample as well as rates of victimization by race. My results show that victimization disproportionally affects people of color particularly native americans. Asian and White adolescents are the only racial categories victimizaed at a lower rate than the sample mean, denoted by the dashed red line. 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-table4
+table5
 ```
 
 Model 1 from table 4 shows the odds ratios calculated the basic logistic regression including all selected variables but does not include any interactions. The odds ratios tell us that as students age one year their chance of victimization increases by about .07%, net of the other variables. Though the literature claims that younger children and males are at greater risk of victimization, victimization as I have defined it only includes serious nonfatal forms of physical violence. As Model 1 shows, younger children are actually safer than their older counterparts in terms of violence. Also, while considering the included variables, female respondents are 58.7% less likely than males to be victims of violence, which follows the literature. Net of the included variables, every thousand dollar increase in the respondent’s family annual income results in a .009% decrease in the likelihood of victimization. For network delinquency, a one unit increase in friends’ delinquency results in a 37% increase in the likelihood of ego’s victimization. The more central a person is in their network the less likely they are to experience violent victimization; as centrality increases by one unit the likelihood of victimization decreases by 25%, while controlling for the other independent variables. Conversely, as the density of the friendship network increases by 1% the likelihood of victimization decreases by 1%.
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-table5
+table6
 ```
 
 Models 2, 3, and 4 examine the relationship between the respondent’s friendship network delinquency and their victimization and whether it is conditioned by their structural position is within the network. To test this effect, the Models include the cross-product of network structural variables and average network delinquency. In order to interpret the interaction effect of structure and delinquency on victimization I broke up the structural variables in to three categories, low, middle, and high defined by their 10th, 50th, and 90th percentile values respectively. Next, I plotted the predicted probability of victimizartion across the range of network delinquency scores while holding all other included variables at their means, as shown in Figures 2, 3, and 4. Predicted probabilities were calulated with the inverse link function to convert the original estimates from log odds to probabilities. The interaction effects are now plain to see. 
