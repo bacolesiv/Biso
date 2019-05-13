@@ -141,7 +141,7 @@ mydata.dv <- mydata %>%
   select(knife.gun, shot, stabbed, jumped)
 
 mydata <- mydata %>%
-  select(AID, victim, race, female, age, family.income, weapon.carry, network.delinquency, popularity, centrality, density)
+  select(AID, victim, race, female, age, family.income, weapon.carry, racial.heterogeneity, network.delinquency, popularity, centrality, density)
 
 #Only complete rows Kept
 mydata.c <- mydata[complete.cases(mydata), ]
@@ -151,7 +151,7 @@ mydata.c <- mydata[complete.cases(mydata), ]
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 model <- map(alist(
   victim ~ dbinom(1, p),
-  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*network.delinquency + b6*popularity + b7*centrality + b8*density,
+  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*racial.heterogeneity + b6*network.delinquency + b7*popularity + b8*centrality + b9*density,
   a ~ dnorm(0,10),
   b1 ~ dnorm(0,10),
   b2 ~ dnorm(0,10),
@@ -160,11 +160,12 @@ model <- map(alist(
   b5 ~ dnorm(0,10),
   b6 ~ dnorm(0,10), 
   b7 ~ dnorm(0,10), 
-  b8 ~ dnorm(0,10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0))
+  b8 ~ dnorm(0,10), 
+  b9 ~ dnorm(0,10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0))
 
 imodel1 <- map(alist(
   victim ~ dbinom(1, p),
-  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*network.delinquency + b6*popularity + b7*centrality + b8*density + b9*network.delinquency*centrality,
+  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*racial.heterogeneity + b6*network.delinquency + b7*popularity + b8*centrality + b9*density + b10*racial.heterogeneity*centrality,
   a ~ dnorm(0,10),
   b1 ~ dnorm(0,10),
   b2 ~ dnorm(0,10),
@@ -174,11 +175,11 @@ imodel1 <- map(alist(
   b6 ~ dnorm(0,10), 
   b7 ~ dnorm(0,10), 
   b8 ~ dnorm(0,10), 
-  b9 ~ dnorm(0,10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0))
+  b9 ~ dnorm(0,10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0, b10=0))
 
 imodel2 <- map(alist(
   victim ~ dbinom(1, p),
-  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*network.delinquency + b6*popularity + b7*centrality + b8*density + b9*network.delinquency*popularity,
+  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*racial.heterogeneity + b6*network.delinquency + b7*popularity + b8*centrality + b9*density + b10*racial.heterogeneity*popularity,
   a ~ dnorm(0,10),
   b1 ~ dnorm(0,10),
   b2 ~ dnorm(0,10),
@@ -188,11 +189,11 @@ imodel2 <- map(alist(
   b6 ~ dnorm(0,10), 
   b7 ~ dnorm(0,10), 
   b8 ~ dnorm(0,10), 
-  b9 ~ dnorm(0,10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0))
+  b9 ~ dnorm(0,10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0, b10=0))
 
 imodel3 <- map(alist(
   victim ~ dbinom(1, p),
-  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*network.delinquency + b6*popularity + b7*centrality + b8*density + b9*network.delinquency*density,
+  logit(p) <- a + b1*age + b2*female + b3*family.income + b4*weapon.carry + b5*racial.heterogeneity + b6*network.delinquency + b7*popularity + b8*centrality + b9*density + b10*racial.heterogeneity*density,
   a ~ dnorm(0,10),
   b1 ~ dnorm(0,10),
   b2 ~ dnorm(0,10),
@@ -202,7 +203,7 @@ imodel3 <- map(alist(
   b6 ~ dnorm(0,10), 
   b7 ~ dnorm(0,10), 
   b8 ~ dnorm(0,10), 
-  b9 ~ dnorm(0,10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0))
+  b9 ~ dnorm(0,10)), data=mydata.c, start=list(b1=0, b2=0, b3=0, b4=0, b5=0, b6=0, b7=0, b8=0, b9=0, b10=0))
 
 m <- as.data.frame((model@coef),1)
 m1 <- as.data.frame((imodel1@coef),1)
@@ -360,22 +361,23 @@ age <- mean(mydata.c$age)
 female <- mean(mydata.c$female)
 family.income <- mean(mydata.c$family.income)
 weapon.carry <- mean(mydata.c$weapon.carry)
-network.delinquency <- seq(0, 5, by = .1)
+racial.heterogeneity <- seq(0, 1, by = .05)
+network.delinquency <- mean(mydata.c$network.delinquency)
 popularity <- mean(mydata.c$popularity)
 centrality <- quantile(mydata.c$centrality, c(.1, .5, .9))
 density <- mean(mydata.c$density)
 
 
-predictions <- as.tibble(expand.grid(age, female, family.income, weapon.carry, network.delinquency, popularity, centrality, density))   
-colnames(predictions) <- c("age", "female", "family.income", "weapon.carry", "network.delinquency", "popularity", "centrality", "density")      
+predictions <- as.tibble(expand.grid(age, female, family.income, weapon.carry, racial.heterogeneity, network.delinquency, popularity, centrality, density))   
+colnames(predictions) <- c("age", "female", "family.income", "weapon.carry", "racial.heterogeneity", "network.delinquency", "popularity", "centrality", "density")      
 
 
 #inv_logit_scaled() logistic() for BRMS models that you should probably try to run. 
 
 #Predicted Likelihood of Victimization added to the newdata 
 samples <- predictions %>%             
-  mutate(victim = logistic(m1[10,] + m1[1,]*age + m1[2,]*female + m1[3,]*family.income + m1[4,]*weapon.carry + m1[5,]*network.delinquency + m1[6,]*popularity + m1[7,]*centrality + m1[8,]*density + m1[9,]*network.delinquency*centrality)) %>%         
-  group_by(network.delinquency, centrality) %>%                              
+  mutate(victim = logistic(m1[10,] + m1[1,]*age + m1[2,]*female + m1[3,]*family.income + m1[4,]*weapon.carry + m1[5,]*racial.heterogeneity + m1[6,]*network.delinquency + m1[7,]*popularity + m1[8,]*centrality + m1[8,]*density + m1[10,]*racial.heterogeneity*centrality)) %>%         
+  group_by(racial.heterogeneity, centrality) %>%                              
   slice(1)
 
 #Visualize: Centrality Interactions
@@ -383,13 +385,13 @@ samples$centrality <- as.character(samples$centrality)
 samples <- samples %>%
   mutate(Centrality = case_when(
     centrality == "0" ~ "10th Percentile",
-    centrality == "0.7867627910904" ~ "50th Percentile",
-    centrality == "1.70167438806094"  ~ "90th Percentile",
+    centrality == "0.78677539864745" ~ "50th Percentile",
+    centrality == "1.70187217534238"  ~ "90th Percentile",
     T ~ NA_character_))
 
-plot1 <- ggplot(samples, aes(x = network.delinquency , group = Centrality)) +
+plot1 <- ggplot(samples, aes(x = racial.heterogeneity , group = Centrality)) +
   geom_line(aes(y = victim, color = Centrality), size = 1.5) +
-  labs(title = "The Conditional Effects of Network Structure and Form on Victimization", subtitle = "The Interaction Effects of Centrality & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization") +
+  labs(title = "The Conditional Effects of Network Structure and Form on Victimization", subtitle = "The Interaction Effects of Centrality & Racial Heterogeneity", x = "Ego Network Racial Heterogeneity", y = "Probability of Victimization") +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
@@ -402,19 +404,22 @@ plot1 <- ggplot(samples, aes(x = network.delinquency , group = Centrality)) +
 age <- mean(mydata.c$age)
 female <- mean(mydata.c$female)
 family.income <- mean(mydata.c$family.income)
-weapon.carry <- mean(mydata.c$weapon.carry, na.rm = T)
-network.delinquency <- seq(0, 5, by = .1)
-centrality <- mean(mydata.c$centrality, na.rm = T)
+weapon.carry <- mean(mydata.c$weapon.carry)
+racial.heterogeneity <- seq(0,1, by = .01)
+network.delinquency <- mean(mydata.c$network.delinquency)
+centrality <- mean(mydata.c$centrality)
 popularity <- quantile(mydata.c$popularity, c(.1, .5, .9))
-density <- mean(mydata.c$density, na.rm = T)
+density <- mean(mydata.c$density)
 
-predictions <- as.tibble(expand.grid(age, female, family.income, weapon.carry, network.delinquency, popularity, centrality, density))   
-colnames(predictions) <- c("age", "female", "family.income", "weapon.carry", "network.delinquency", "popularity", "centrality", "density")      
+
+predictions <- as.tibble(expand.grid(age, female, family.income, weapon.carry, racial.heterogeneity, network.delinquency, popularity, centrality, density))   
+colnames(predictions) <- c("age", "female", "family.income", "weapon.carry", "racial.heterogeneity", "network.delinquency", "popularity", "centrality", "density")  
+
 
 #Predicted Likelihood of Victimization added to the newdata 
 samples <- predictions %>%             
-  mutate(victim = logistic(m2[10,] + m2[1,]*age + m2[2,]*female + m2[3,]*family.income + m2[4,]*weapon.carry + m2[5,]*network.delinquency + m2[6,]*popularity + m2[7,]*centrality + m2[8,]*density + m2[9,]*network.delinquency*popularity)) %>%         
-  group_by(network.delinquency, popularity) %>%                              
+  mutate(victim = logistic(m2[10,] + m2[1,]*age + m2[2,]*female + m2[3,]*family.income + m2[4,]*weapon.carry + m2[5,]*racial.heterogeneity + m2[6,]*network.delinquency + m2[7,]*popularity + m2[8,]*centrality + m2[8,]*density + m2[10,]*racial.heterogeneity*populairty)) %>%         
+  group_by(racial.heterogeneity, popularity) %>%                              
   slice(1)
 
 #Visualize: Centrality Interactions
@@ -427,9 +432,9 @@ samples <- samples %>%
 
 samples$Popularity <- as.factor(samples$Popularity)
 
-plot2 <- ggplot(samples, aes(x = network.delinquency , group = Popularity)) +
+plot2 <- ggplot(samples, aes(x = racial.heterogeneity , group = Popularity)) +
   geom_line(aes(y = victim, color = Popularity) , size = 1.5) +
-  labs(title = "The Conditional Effects of Network Structure and Form on Victimization", subtitle = "The Interaction Effects of Popularity & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization") +
+  labs(title = "The Conditional Effects of Network Structure and Form on Victimization", subtitle = "The Interaction Effects of Popularity & Racial Heterogeneity", x = "Ego Network Racial Heterogeneity", y = "Probability of Victimization") +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
@@ -442,18 +447,22 @@ plot2 <- ggplot(samples, aes(x = network.delinquency , group = Popularity)) +
 age <- mean(mydata.c$age)
 female <- mean(mydata.c$female)
 family.income <- mean(mydata.c$family.income)
-weapon.carry <- mean(mydata.c$weapon.carry, na.rm = T)
-network.delinquency <- seq(0, 5, by = .1)
-centrality <- mean(mydata.c$centrality, na.rm = T)
+weapon.carry <- mean(mydata.c$weapon.carry)
+racial.heterogeneity <- seq(0,1, by = .01)
+network.delinquency <- mean(mydata.c$network.delinquency)
+centrality <- mean(mydata.c$centrality)
 density <- quantile(mydata.c$density, c(.1, .5, .9))
-popularity <- mean(mydata.c$popularity, na.rm = T)
+popularity <- mean(mydata.c$popularity)
 
-predictions <- as.tibble(expand.grid(age, female, family.income, weapon.carry, network.delinquency, popularity, centrality, density))   
-colnames(predictions) <- c("age", "female", "family.income", "weapon.carry", "network.delinquency", "popularity", "centrality", "density")      
+
+predictions <- as.tibble(expand.grid(age, female, family.income, weapon.carry, racial.heterogeneity, network.delinquency, popularity, centrality, density))   
+colnames(predictions) <- c("age", "female", "family.income", "weapon.carry", "racial.heterogeneity", "network.delinquency", "popularity", "centrality", "density")  
+
+
 #Predicted Likelihood of Victimization added to the newdata 
-samples <- predictions%>%             
-  mutate(victim = logistic(m3[10,] + m3[1,]*age + m3[2,]*female + m3[3,]*family.income + m3[4,]*weapon.carry + m3[5,]*network.delinquency + m3[6,]*popularity + m3[7,]*centrality + m3[8,]*density + m3[9,]*network.delinquency*density))%>%         
-  group_by(network.delinquency, density) %>%                              
+samples <- predictions %>%             
+  mutate(victim = logistic(m3[10,] + m3[1,]*age + m3[2,]*female + m3[3,]*family.income + m3[4,]*weapon.carry + m3[5,]*racial.heterogeneity + m3[6,]*network.delinquency + m3[7,]*popularity + m3[8,]*centrality + m3[8,]*density + m3[10,]*racial.heterogeneity*density)) %>%         
+  group_by(racial.heterogeneity, density) %>%                              
   slice(1)
 
 
@@ -467,9 +476,9 @@ samples <- samples %>%
     density == "0.5"  ~ "90th Percentile",
     T ~ NA_character_))
 
-plot3 <- ggplot(samples, aes(x = network.delinquency , group = Density)) +
+plot3 <- ggplot(samples, aes(x = racial.heterogeneity , group = Density)) +
   geom_line(aes(y = victim, color = Density) , size = 1.5) +
-  labs(title = "The Conditional Effects of Network Structure and Form on Victimization", subtitle = "The Interaction Effects of Density & Network Delinquency", x = "Average Delinquency in Friendship Network", y = "Probability of Victimization") +
+  labs(title = "The Conditional Effects of Network Structure and Form on Victimization", subtitle = "The Interaction Effects of Density & Network Delinquency", x = "Ego Network Racial Heterogeneity", y = "Probability of Victimization") +
   scale_colour_pander() +
   scale_fill_pander() +
   theme_pander() + 
@@ -480,9 +489,45 @@ plot3 <- ggplot(samples, aes(x = network.delinquency , group = Density)) +
 
 
 
+```{r}
+racial.heterogeneity <- quantile(mydata.c$racial.heterogeneity, c(.1, .5, .9))
+  
+mydata.c <- mydata.c %>%
+  mutate(rh.cat = case_when(
+    racial.heterogeneity <= .2 ~ "0:10th Percentile",
+    (racial.heterogeneity > .2 & racial.heterogeneity <= .4) ~ "10th:50th Percentile",
+    (racial.heterogeneity > .4 & racial.heterogeneity <= .75) ~ "50th:90th Percentile",
+    racial.heterogeneity > .75 ~ ">90th Percentile",
+    T ~ NA_character_))
+
+racial.heterogeneity.levels <- c("0:10th Percentile", "10th:50th Percentile", "50th:90th Percentile", ">90th Percentile")
+
+mydata.c <- mydata.c %>%
+  mutate(rh.cat = factor(rh.cat, levels = racial.heterogeneity.levels, ordered = T))
+  
+rh.victim <- mydata.c %>%
+  ggplot(aes(x = rh.cat)) +
+  geom_bar(aes(fill = as.character(weapon.carry)), position = "fill") + guides(fill = F) + 
+  geom_hline(yintercept= mean(mydata.c$weapon.carry), linetype = "dashed", color = "darkred") +
+  ylim(0, .1) + 
+  annotate("text", x = 3.2, y = 0.063, label = "Mean", color = "darkred") +
+  coord_flip() +
+  labs(title = "Racial Heterogeneity", y = "Proportion of Victims", x = " ") +
+  theme_igray() +
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), legend.position = "none") 
+
+ggsave("rh_plot.pdf", rh.victim, width = 25, height = 15, units = "cm")
+```
 
 
 
+```{r}
+mydata.c$Victim <- as.factor(mydata.c$victim)
+
+race.rh <- mydata.c %>%
+  ggplot() + 
+  geom_bar(mapping = aes(x = rh.cat, fill = Victim), position = "fill")
+```
 
 
 
