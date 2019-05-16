@@ -485,48 +485,64 @@ plot3 <- ggplot(samples, aes(x = racial.heterogeneity , group = Density)) +
   theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5),  plot.subtitle = element_text(hjust = 0.5))
 ```
 
-
-
-
-
+###Racial Heterogeneity Figures
 ```{r}
-racial.heterogeneity <- quantile(mydata.c$racial.heterogeneity, c(.1, .5, .9))
+racial.heterogeneity <- quantile(mydata.c$racial.heterogeneity, c(.33, .66))
   
 mydata.c <- mydata.c %>%
   mutate(rh.cat = case_when(
-    racial.heterogeneity <= .2 ~ "0:10th Percentile",
-    (racial.heterogeneity > .2 & racial.heterogeneity <= .4) ~ "10th:50th Percentile",
-    (racial.heterogeneity > .4 & racial.heterogeneity <= .75) ~ "50th:90th Percentile",
-    racial.heterogeneity > .75 ~ ">90th Percentile",
+    racial.heterogeneity <= .33 ~ "Low", #Bottom 1/3
+    (racial.heterogeneity > .33 & racial.heterogeneity <= .66) ~ "Middle", #Between 1/3 and 2/3
+    racial.heterogeneity > .66 ~ "High", #Top 1/3
     T ~ NA_character_))
 
-racial.heterogeneity.levels <- c("0:10th Percentile", "10th:50th Percentile", "50th:90th Percentile", ">90th Percentile")
+racial.heterogeneity.levels <- c("Low", "Middle", "High")
 
 mydata.c <- mydata.c %>%
   mutate(rh.cat = factor(rh.cat, levels = racial.heterogeneity.levels, ordered = T))
   
-rh.victim <- mydata.c %>%
+(rh.victim <- mydata.c %>%
   ggplot(aes(x = rh.cat)) +
-  geom_bar(aes(fill = as.character(weapon.carry)), position = "fill") + guides(fill = F) + 
-  geom_hline(yintercept= mean(mydata.c$weapon.carry), linetype = "dashed", color = "darkred") +
-  ylim(0, .1) + 
-  annotate("text", x = 3.2, y = 0.063, label = "Mean", color = "darkred") +
+  geom_bar(aes(fill = as.character(victim)), position = "fill") +
+  geom_hline(yintercept= mean(mydata.c$victim), linetype = "dashed") +
+  ylim(0, .22) + 
+  annotate("text", x = 1, y = 0.2, label = "Mean\nVictimization", size = 3) +
   coord_flip() +
-  labs(title = "Racial Heterogeneity", y = "Proportion of Victims", x = " ") +
-  theme_igray() +
-  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5), legend.position = "none") 
+  labs(title = "Racial Heterogeneity & Victimization", y = "Proportion of Victims", x = " ") +
+  scale_fill_manual(values=c("white", "seagreen"), 
+                       name="Victimization",
+                       breaks=c("1", "0"),
+                       labels=c("Victims", "Non-Victims")) + 
+  theme_pander() + 
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5)))
+  
 
-ggsave("rh_plot.pdf", rh.victim, width = 25, height = 15, units = "cm")
-```
+ggsave("rh.victim.pdf", rh.victim, width = 25, height = 15, units = "cm")
 
 
+network.delinquency <- quantile(mydata.c$network.delinquency, c(.5))
 
-```{r}
-mydata.c$Victim <- as.factor(mydata.c$victim)
+mydata.c <- mydata.c %>%
+  mutate(Delinquency = case_when(
+    network.delinquency <= .7143 ~ "Non Delinquents", #At or Below the 25th Percentile
+    (network.delinquency > .7143 & network.delinquency < 1.4286) ~ "Average Teen", #IQR 
+    network.delinquency >= 1.4286 ~ "Delinquents", #At or Above the 75th Percentile
+    T ~ NA_character_))
 
-race.rh <- mydata.c %>%
-  ggplot() + 
-  geom_bar(mapping = aes(x = rh.cat, fill = Victim), position = "fill")
+(rh.delinquency <- mydata.c %>%
+  ggplot(aes(x = rh.cat)) +
+  geom_bar(aes(fill = Delinquency), position = "fill") + 
+  coord_flip() +
+  labs(title = "Racial Heterogeneity & Delinquency", y = "Proportion of Delinquents", x = " ") +
+  scale_fill_pander() + 
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5)))
+
+ggsave("rh.delinquency.pdf", rh.delinquency, width = 25, height = 15, units = "cm")
+
+a <- grid.arrange(rh.victim, rh.delinquency, nrow = 2)
+
+ggsave("rh.pdf", a, width = 25, height = 15, units = "cm")
+
 ```
 
 
