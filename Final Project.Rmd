@@ -18,24 +18,25 @@ library(knitr)
 library(broom)
 library(brms)
 library(loo)
+library(bayesplot)
+library(dotwhisker)
+library(GGally)
 
 #Windows
-#load("E:/Repository/Biso/Biso/data/wave1.rda")
-#load("E:/Repository/Biso/Biso/data/network.wave1.rda")
-#load("E:/Repository/Biso/Biso/data/weights.rda")
+load("E:/Repository/Biso/Biso/data/wave1.rda")
+load("E:/Repository/Biso/Biso/data/network.wave1.rda")
+load("E:/Repository/Biso/Biso/data/weights.rda")
 
 #Mac
-load("~/desktop/Repository/Biso/data/wave1.rda")
-load("~/desktop/Repository/Biso/data/network.wave1.rda")
-load("~/desktop/Repository/Biso/data/weights.rda")
+#load("~/desktop/Repository/Biso/data/wave1.rda")
+#load("~/desktop/Repository/Biso/data/network.wave1.rda")
+#load("~/desktop/Repository/Biso/data/weights.rda")
 
 #Renamed
 wave1.data <- da21600.0001
 network.data <- da21600.0003
 weights <- da21600.0004
-```
 
-```{r Consolidating the Data, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 #Merging Relevant Variables into one Data Frame
 data1 <- wave1.data %>%
   dplyr :: select(AID, H1FV2, H1FV3, H1FV4, H1FV6, S6A, S6B, S6C, S6D, S6E, S4, S1, S2, PA55, H1FV9)
@@ -48,6 +49,8 @@ data3 <- weights %>%
 
 mydata <- merge(data1, data2, by = "AID") 
 #mydata <- merge(my.data, data3, by = "AID")
+
+rm(da21600.0001, da21600.0003, da21600.0004, data1, data2, data3, wave1.data, network.data, weights)
 ```
 
 ```{r Data Cleaning, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
@@ -167,6 +170,112 @@ imodel1 <- update(model, newdata = mydata.c, formula = victim | trials(1) ~ 1 + 
 imodel2 <- update(model, newdata = mydata.c, formula = victim | trials(1) ~ 1 + age + female + family.income + weapon.carry + racial.heterogeneity + network.delinquency + popularity + centrality + density + network.delinquency:popularity)
 
 imodel3 <- update(model, newdata = mydata.c, formula = victim | trials(1) ~ 1 + age + female + family.income + weapon.carry + racial.heterogeneity + network.delinquency + popularity + centrality + density + network.delinquency:density)
+
+```
+
+```{r Effect Size Plots, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+
+#Tidying Models 
+m1 <- tidy(model) %>%
+  mutate(estimate = exp(estimate), 
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  mutate(term = case_when(
+    term == "b_Intercept" ~ "Intercept",
+    term == "b_age" ~ "Age",
+    term == "b_female" ~ "Sex",
+    term == "b_family.income" ~ "Family Income",
+    term == "b_weapon.carry" ~ "Weapon Carry",
+    term == "b_racial.heterogeneity" ~ "Racial Heterogeneity",
+    term == "b_network.delinquency" ~ "Network Delinquency",
+    term == "b_popularity" ~ "Popularity",
+    term == "b_centrality" ~ "Centrality",
+    term == "b_density" ~ "Density",
+    T ~ NA_character_)) %>%
+  mutate(model = "Model 1") %>%
+  select(term, estimate, lower, upper, model)
+
+m2 <- tidy(imodel1) %>%
+  mutate(estimate = exp(estimate), 
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  mutate(term = case_when(
+    term == "b_Intercept" ~ "Intercept",
+    term == "b_age" ~ "Age",
+    term == "b_female" ~ "Sex",
+    term == "b_family.income" ~ "Family Income",
+    term == "b_weapon.carry" ~ "Weapon Carry",
+    term == "b_racial.heterogeneity" ~ "Racial Heterogeneity",
+    term == "b_network.delinquency" ~ "Network Delinquency",
+    term == "b_popularity" ~ "Popularity",
+    term == "b_centrality" ~ "Centrality",
+    term == "b_density" ~ "Density",
+    term == "b_network.delinquency:centrality" ~ "Delinquency*Centrality",
+    T ~ NA_character_)) %>%
+  mutate(model = "Model 2") %>%
+  select(term, estimate, lower, upper)
+
+m3 <- tidy(imodel2) %>%
+  mutate(estimate = exp(estimate), 
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  mutate(term = case_when(
+    term == "b_Intercept" ~ "Intercept",
+    term == "b_age" ~ "Age",
+    term == "b_female" ~ "Sex",
+    term == "b_family.income" ~ "Family Income",
+    term == "b_weapon.carry" ~ "Weapon Carry",
+    term == "b_racial.heterogeneity" ~ "Racial Heterogeneity",
+    term == "b_network.delinquency" ~ "Network Delinquency",
+    term == "b_popularity" ~ "Popularity",
+    term == "b_centrality" ~ "Centrality",
+    term == "b_density" ~ "Density",
+    term == "b_network.delinquency:popularity" ~ "Delinquency*Popularity",
+    T ~ NA_character_)) %>%
+  mutate(model = "Model 3") %>%
+  select(term, estimate, lower, upper, model)
+
+m4 <- tidy(imodel3) %>%
+  mutate(estimate = exp(estimate), 
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  mutate(term = case_when(
+    term == "b_Intercept" ~ "Intercept",
+    term == "b_age" ~ "Age",
+    term == "b_female" ~ "Sex",
+    term == "b_family.income" ~ "Family Income",
+    term == "b_weapon.carry" ~ "Weapon Carry",
+    term == "b_racial.heterogeneity" ~ "Racial Heterogeneity",
+    term == "b_network.delinquency" ~ "Network Delinquency",
+    term == "b_popularity" ~ "Popularity",
+    term == "b_centrality" ~ "Centrality",
+    term == "b_density" ~ "Density",
+    term == "b_network.delinquency:density" ~ "Delinquency*Density",
+    T ~ NA_character_)) %>%
+  mutate(model = "Model 4") %>%
+  select(term, estimate, lower, upper, model)
+
+m1 <- m1[complete.cases(m1), ]
+m2 <- m2[complete.cases(m2), ]
+m3 <- m3[complete.cases(m3), ]
+m4 <- m4[complete.cases(m4), ]
+
+
+effects.data <- rbind(m1, m2, m3, m4)
+
+#Effect Size Plot
+(effects1 <- effects.data %>%
+  ggplot(aes(x = variable, y = p)) +
+  geom_point(aes(color = model)) +
+  geom_linerange(aes(ymin = lb, ymax = ub, color = model)) +
+  coord_flip())
+
+#Trying out GGcoef
+
+ggcoef(m1, mapping = aes_string(y = "term", x = "estimate"),
+  vline = T, vline_intercept = 1, vline_linetype = "dotted", vline_size = 1, 
+  errorbar_color = "seagreen", conf.int = T,
+  sort = "ascending")
 ```
 
 ```{r Model Tables, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
@@ -254,8 +363,8 @@ mu <- round(mu, digits = 3)
 race.victim <- mydata.c %>%
   ggplot(aes(x = race)) +
   geom_bar(aes(fill = as.character(victim)), position = "fill") + guides(fill = F) + 
-  geom_hline(yintercept= mu, linetype = "dashed", color = "red3") + #can use annotate() to label the mean line
-  annotate("text", x = 8, y = 0.26, label = "Sample Mean", color = "red3", size = 2) +
+  geom_hline(yintercept= mu, linetype = "dashed") + #can use annotate() to label the mean line
+  annotate("text", x = 8, y = 0.24, label = "Mean\nVictimization", size = 2.5) +
   coord_flip() +
   labs(title = "Victimization by Race", y = "Proportion of Victims", x = " ") +
   scale_colour_pander() +
@@ -438,6 +547,72 @@ plot3 <- ggplot(samples, aes(x = network.delinquency , group = Density)) +
   theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5, size = 12),  plot.subtitle = element_text(hjust = 0.5)) +
   ggsave("plot3.pdf", width = 20, height = 15, units = "cm")
 ```
+
+```{r RH Figures, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+racial.heterogeneity <- quantile(mydata.c$racial.heterogeneity, c(.25, .75))
+  
+mydata.c <- mydata.c %>%
+  mutate(rh.cat = case_when(
+    racial.heterogeneity <= .25 ~ "25th Percentile", 
+    (racial.heterogeneity > .25 & racial.heterogeneity < .6) ~ "IQR",
+    racial.heterogeneity >= .6 ~ "75th Percentile",
+    T ~ NA_character_))
+
+racial.heterogeneity.levels <- c("25th Percentile", "IQR", "75th Percentile")
+
+mydata.c <- mydata.c %>%
+  mutate(rh.cat = factor(rh.cat, levels = racial.heterogeneity.levels, ordered = T))
+  
+(rh.victim <- mydata.c %>%
+  ggplot(aes(x = rh.cat)) +
+  geom_bar(aes(fill = as.character(victim)), position = "fill") +
+  geom_hline(yintercept= mean(mydata.c$victim), linetype = "dashed") +
+  ylim(0, .22) + 
+  annotate("text", x = 1, y = 0.2, label = "Mean\nVictimization", size = 3) +
+  coord_flip() +
+  labs(title = "Racial Heterogeneity & Victimization", y = "Proportion of Victims", x = " ") +
+  scale_fill_manual(values=c("white", "seagreen"), 
+                       name="Victimization",
+                       breaks=c("1", "0"),
+                       labels=c("Victims", "Non-Victims")) + 
+  theme_pander() + 
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5)))
+ggsave("rh.victim.pdf", rh.victim, width = 25, height = 15, units = "cm")
+
+
+network.delinquency <- quantile(mydata.c$network.delinquency, c(.25, .75))
+
+mydata.c <- mydata.c %>%
+  mutate(Delinquency = case_when(
+    network.delinquency <= .7143 ~ "Non Delinquents", #At or Below the 25th Percentile
+    (network.delinquency > .7143 & network.delinquency < 1.4286) ~ "Average Teen", #IQR 
+    network.delinquency >= 1.4286 ~ "Delinquents", #At or Above the 75th Percentile
+    T ~ NA_character_))
+
+(rh.delinquency <- mydata.c %>%
+  ggplot(aes(x = rh.cat)) +
+  geom_bar(aes(fill = Delinquency), position = "fill") + 
+  coord_flip() +
+  labs(title = "Racial Heterogeneity & Delinquency", y = "Proportion of Delinquents", x = " ") +
+  scale_fill_pander() + 
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5)))
+ggsave("rh.delinquency.pdf", rh.delinquency, width = 25, height = 15, units = "cm")
+
+a <- grid.arrange(rh.victim, rh.delinquency, nrow = 2)
+ggsave("rh.pdf", a, width = 25, height = 15, units = "cm")
+
+
+(race.delinquency <- mydata.c %>%
+  ggplot(aes(x = race)) +
+  geom_bar(aes(fill = Delinquency), position = "fill") + 
+  coord_flip() +
+  labs(title = "Racial & Delinquency", y = "Proportion of Delinquents", x = " ") +
+  scale_fill_pander() + 
+  theme(text = element_text(family = "Times"), plot.title = element_text(hjust = 0.5)))
+ggsave("race.delinquency.pdf", race.delinquency, width = 25, height = 15, units = "cm")
+
+```
+
 
 ##Introduction
 The formative years in the lives of many American teenagers take place within the context of public or private school systems. In these contexts, teens are consistently exposed to many opportunities to practice forming and maintaining social relationships. One potential outcome of adolescent social relations is the risk of engaging with delinquency and violence, especially when teens are unsupervised (Haynie & Osgood 2005). In fact, in the United States youth are more than 2.3 times more likely than the general population to be victims (Hanish and Guerra 2000). Sociological research on adolescent crime and delinquency suggests that the social characteristics of an adolescent’s community heavily influence the likelihood of that teen’s involvement in delinquent behavior and perhaps the likelihood of their victimization (Hanish and Guerra 2000; Schreck, Fisher, and Miller 2004; Mouttapa, Valente, Gallaher, Rohrbach and Unger 2004; Sampson 1984; Moody 2001; Berg, Brunson, and Stewart 2012; Sampson and Groves 1989; Pridemore 2002; Evans and Smokoski 2016; Shaw and Mckay ([1942] 1969); Hirschi 1969; Sutherland and Cressey 1974). Schreck et al. (2004) speculate that research on victimization could benefit from studies emphasizing the peer influences generated by delinquent groups, because delinquency and victimization share many empirical connections. Their study identified peer delinquency as a significant risk factor for violent victimization. Additionally, Hirschi’s (1969) theory of social control and Sutherland’s (1974) theory of differential association have both empirically verified a connection between social networks and delinquency/crime and have been adapted and replicated by modern sociologists such as Haynie (2001), Matsueda (1982), and Mangino (2009). Just as there is a relationship between network position and delinquency, it follows, that there is a likely connection between the social network occupied by an adolescent and their chances of becoming a victim. However, the likelihood of victimization compared to the propensity towards delinquency may function differently in terms of causal mechanisms, particularly the mediating effects of the network’s structure. I posit that adolescent friendship networks influence how individuals learn behaviors and that the specific behaviors they adopt will either enhance or limit their exposure to violence. For this analysis I test the relationship between instances of serious nonfatal forms of victimization and the behavioral norms of adolescent friendship networks. Interaction terms are included to examine whether the influence of these norms on victimization are conditioned by the structural position of adolescents within their friendship networks. I hypothesize that network structure will have substantive influence on the relationship between network delinquency and violent victimization. 
