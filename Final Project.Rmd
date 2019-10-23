@@ -200,12 +200,7 @@ gm1 <- gm1.df %>%
     term == "family.income" ~ "Family Income",
     term == "weapon.carry" ~ "Weapon Carry",
     term == "racial.heterogeneity" ~ "Racial Heterogeneity",
-    term == "network.delinquency" ~ "Network Delinquency",
-    term == "popularity" ~ "Popularity",
-    term == "centrality" ~ "Centrality",
-    term == "density" ~ "Density",
-    T ~ NA_character_)) %>%
-  mutate(model = "Model 1") %>%
+    term == "network.delinquency" ~ "Network Delinquency",sc
   select(term, estimate, std.error, model)
 
 gm2 <- gm2.df %>%
